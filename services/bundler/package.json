@@ -1,0 +1,6 @@
+{
+  "name": "@abstract-wallet/bundler", "version": "0.1.0", "private": true, "type": "module",
+  "scripts": { "dev": "tsx src/server.ts", "test": "vitest run", "typecheck": "tsc --noEmit" },
+  "dependencies": { "viem": "2.57.17" },
+  "devDependencies": { "vitest": "3.2.7", "typescript": "5.9.3", "tsx": "4.21.0", "@types/node": "25.5.0" }
+}

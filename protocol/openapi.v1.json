@@ -1,0 +1,5193 @@
+{
+  "openapi": "3.1.0",
+  "jsonSchemaDialect": "https://spec.openapis.org/oas/3.1/dialect/base",
+  "info": {
+    "title": "Abstract Wallet Backend HTTP API — Draft v1",
+    "version": "0.1.0-draft",
+    "description": "候选接口契约，待F01/F03/F04/F05评审；未批准、未实现或执行测试。JSON示例仅结构/手工算术，不是签名或哈希向量。规范说明BACKEND_API.md；链上字节签名SIGNATURE_FORMATS.md。"
+  },
+  "servers": [
+    {
+      "url": "https://wallet-api.example.invalid",
+      "description": "保留.invalid示意地址，未部署。"
+    }
+  ],
+  "security": [
+    {
+      "BearerSession": []
+    }
+  ],
+  "tags": [
+    {
+      "name": "auth"
+    },
+    {
+      "name": "configuration"
+    },
+    {
+      "name": "sponsorship"
+    },
+    {
+      "name": "operations"
+    },
+    {
+      "name": "delegation"
+    }
+  ],
+  "paths": {
+    "/v1/auth/challenges": {
+      "post": {
+        "operationId": "createAuthChallenge",
+        "summary": "创建一次性根账户挑战",
+        "tags": [
+          "auth"
+        ],
+        "description": "",
+        "responses": {
+          "201": {
+            "description": "新挑战，尚未建立会话。",
+            "headers": {
+              "Cache-Control": {
+                "description": "会话、预算、许可和状态不由共享缓存保存。",
+                "schema": {
+                  "type": "string",
+                  "const": "no-store"
+                }
+              },
+              "X-Request-Id": {
+                "description": "本次投递requestId。",
+                "schema": {
+                  "$ref": "#/components/schemas/OpaqueId"
+                }
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AuthChallengeResponse"
+                }
+              }
+            }
+          },
+          "200": {
+            "description": "同幂等键恢复原挑战。",
+            "headers": {
+              "Cache-Control": {
+                "description": "会话、预算、许可和状态不由共享缓存保存。",
+                "schema": {
+                  "type": "string",
+                  "const": "no-store"
+                }
+              },
+              "X-Request-Id": {
+                "description": "本次投递requestId。",
+                "schema": {
+                  "$ref": "#/components/schemas/OpaqueId"
+                }
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AuthChallengeResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/Error400"
+          },
+          "401": {
+            "$ref": "#/components/responses/Error401"
+          },
+          "403": {
+            "$ref": "#/components/responses/Error403"
+          },
+          "404": {
+            "$ref": "#/components/responses/Error404"
+          },
+          "409": {
+            "$ref": "#/components/responses/Error409"
+          },
+          "422": {
+            "$ref": "#/components/responses/Error422"
+          },
+          "429": {
+            "$ref": "#/components/responses/Error429"
+          },
+          "503": {
+            "$ref": "#/components/responses/Error503"
+          },
+          "500": {
+            "$ref": "#/components/responses/Error500"
+          }
+        },
+        "security": [],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/AuthChallengeRequest"
+              },
+              "examples": {
+                "structure": {
+                  "$ref": "#/components/examples/ChallengeStructure"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/auth/sessions": {
+      "post": {
+        "operationId": "createAuthSession",
+        "summary": "验证根签名并建立短时会话",
+        "tags": [
+          "auth"
+        ],
+        "description": "",
+        "responses": {
+          "201": {
+            "description": "挑战被原子消费并建立一个会话。",
+            "headers": {
+              "Cache-Control": {
+                "description": "会话、预算、许可和状态不由共享缓存保存。",
+                "schema": {
+                  "type": "string",
+                  "const": "no-store"
+                }
+              },
+              "X-Request-Id": {
+                "description": "本次投递requestId。",
+                "schema": {
+                  "$ref": "#/components/schemas/OpaqueId"
+                }
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AuthSessionResponse"
+                }
+              }
+            }
+          },
+          "200": {
+            "description": "同challenge同键同内容恢复原逻辑会话。",
+            "headers": {
+              "Cache-Control": {
+                "description": "会话、预算、许可和状态不由共享缓存保存。",
+                "schema": {
+                  "type": "string",
+                  "const": "no-store"
+                }
+              },
+              "X-Request-Id": {
+                "description": "本次投递requestId。",
+                "schema": {
+                  "$ref": "#/components/schemas/OpaqueId"
+                }
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AuthSessionResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/Error400"
+          },
+          "401": {
+            "$ref": "#/components/responses/Error401"
+          },
+          "403": {
+            "$ref": "#/components/responses/Error403"
+          },
+          "404": {
+            "$ref": "#/components/responses/Error404"
+          },
+          "409": {
+            "$ref": "#/components/responses/Error409"
+          },
+          "422": {
+            "$ref": "#/components/responses/Error422"
+          },
+          "429": {
+            "$ref": "#/components/responses/Error429"
+          },
+          "503": {
+            "$ref": "#/components/responses/Error503"
+          },
+          "500": {
+            "$ref": "#/components/responses/Error500"
+          }
+        },
+        "security": [],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/AuthSessionRequest"
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/chains": {
+      "get": {
+        "operationId": "getChains",
+        "summary": "读取版本化链清单",
+        "tags": [
+          "configuration"
+        ],
+        "description": "",
+        "responses": {
+          "200": {
+            "description": "成功查询；证据未知时仍为正常未知状态。",
+            "headers": {
+              "Cache-Control": {
+                "description": "会话、预算、许可和状态不由共享缓存保存。",
+                "schema": {
+                  "type": "string",
+                  "const": "no-store"
+                }
+              },
+              "X-Request-Id": {
+                "description": "本次投递requestId。",
+                "schema": {
+                  "$ref": "#/components/schemas/OpaqueId"
+                }
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ChainsResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/Error400"
+          },
+          "401": {
+            "$ref": "#/components/responses/Error401"
+          },
+          "403": {
+            "$ref": "#/components/responses/Error403"
+          },
+          "404": {
+            "$ref": "#/components/responses/Error404"
+          },
+          "409": {
+            "$ref": "#/components/responses/Error409"
+          },
+          "422": {
+            "$ref": "#/components/responses/Error422"
+          },
+          "429": {
+            "$ref": "#/components/responses/Error429"
+          },
+          "503": {
+            "$ref": "#/components/responses/Error503"
+          },
+          "500": {
+            "$ref": "#/components/responses/Error500"
+          }
+        },
+        "security": []
+      }
+    },
+    "/v1/sponsorships/prepare": {
+      "post": {
+        "operationId": "prepareSponsorship",
+        "summary": "准备报价与不可执行stub",
+        "tags": [
+          "sponsorship"
+        ],
+        "description": "",
+        "responses": {
+          "201": {
+            "description": "新报价；未预留、未签发许可。",
+            "headers": {
+              "Cache-Control": {
+                "description": "会话、预算、许可和状态不由共享缓存保存。",
+                "schema": {
+                  "type": "string",
+                  "const": "no-store"
+                }
+              },
+              "X-Request-Id": {
+                "description": "本次投递requestId。",
+                "schema": {
+                  "$ref": "#/components/schemas/OpaqueId"
+                }
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SponsorshipPrepareResponse"
+                }
+              }
+            }
+          },
+          "200": {
+            "description": "同键恢复原报价，不延长报价有效期。",
+            "headers": {
+              "Cache-Control": {
+                "description": "会话、预算、许可和状态不由共享缓存保存。",
+                "schema": {
+                  "type": "string",
+                  "const": "no-store"
+                }
+              },
+              "X-Request-Id": {
+                "description": "本次投递requestId。",
+                "schema": {
+                  "$ref": "#/components/schemas/OpaqueId"
+                }
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SponsorshipPrepareResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/Error400"
+          },
+          "401": {
+            "$ref": "#/components/responses/Error401"
+          },
+          "403": {
+            "$ref": "#/components/responses/Error403"
+          },
+          "404": {
+            "$ref": "#/components/responses/Error404"
+          },
+          "409": {
+            "$ref": "#/components/responses/Error409"
+          },
+          "422": {
+            "$ref": "#/components/responses/Error422"
+          },
+          "429": {
+            "$ref": "#/components/responses/Error429"
+          },
+          "503": {
+            "$ref": "#/components/responses/Error503"
+          },
+          "500": {
+            "$ref": "#/components/responses/Error500"
+          }
+        },
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/SponsorshipPrepareRequest"
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/sponsorships": {
+      "post": {
+        "operationId": "createSponsorship",
+        "summary": "先预留提交，再签发赞助许可",
+        "tags": [
+          "sponsorship"
+        ],
+        "description": "",
+        "responses": {
+          "201": {
+            "description": "可用许可已持久化，permit非null；仍不证明已授权/受理/上链。",
+            "headers": {
+              "Cache-Control": {
+                "description": "会话、预算、许可和状态不由共享缓存保存。",
+                "schema": {
+                  "type": "string",
+                  "const": "no-store"
+                }
+              },
+              "X-Request-Id": {
+                "description": "本次投递requestId。",
+                "schema": {
+                  "$ref": "#/components/schemas/OpaqueId"
+                }
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SponsorshipRecord"
+                }
+              }
+            }
+          },
+          "202": {
+            "description": "预留已持久化，待签发或签发结果待核实；permit可能为null，预算风险保留。",
+            "headers": {
+              "Cache-Control": {
+                "description": "会话、预算、许可和状态不由共享缓存保存。",
+                "schema": {
+                  "type": "string",
+                  "const": "no-store"
+                }
+              },
+              "X-Request-Id": {
+                "description": "本次投递requestId。",
+                "schema": {
+                  "$ref": "#/components/schemas/OpaqueId"
+                }
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SponsorshipRecord"
+                }
+              }
+            }
+          },
+          "200": {
+            "description": "同键同内容返回同一逻辑记录，不再次签发或占用。",
+            "headers": {
+              "Cache-Control": {
+                "description": "会话、预算、许可和状态不由共享缓存保存。",
+                "schema": {
+                  "type": "string",
+                  "const": "no-store"
+                }
+              },
+              "X-Request-Id": {
+                "description": "本次投递requestId。",
+                "schema": {
+                  "$ref": "#/components/schemas/OpaqueId"
+                }
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SponsorshipRecord"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/Error400"
+          },
+          "401": {
+            "$ref": "#/components/responses/Error401"
+          },
+          "403": {
+            "$ref": "#/components/responses/Error403"
+          },
+          "404": {
+            "$ref": "#/components/responses/Error404"
+          },
+          "409": {
+            "$ref": "#/components/responses/Error409"
+          },
+          "422": {
+            "$ref": "#/components/responses/Error422"
+          },
+          "429": {
+            "$ref": "#/components/responses/Error429"
+          },
+          "503": {
+            "$ref": "#/components/responses/Error503"
+          },
+          "500": {
+            "$ref": "#/components/responses/Error500"
+          }
+        },
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/SponsorshipCreateRequest"
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/sponsorships/{id}": {
+      "get": {
+        "operationId": "getSponsorship",
+        "summary": "查询自己许可及风险预留",
+        "tags": [
+          "sponsorship"
+        ],
+        "description": "",
+        "responses": {
+          "200": {
+            "description": "成功查询；证据未知时仍为正常未知状态。",
+            "headers": {
+              "Cache-Control": {
+                "description": "会话、预算、许可和状态不由共享缓存保存。",
+                "schema": {
+                  "type": "string",
+                  "const": "no-store"
+                }
+              },
+              "X-Request-Id": {
+                "description": "本次投递requestId。",
+                "schema": {
+                  "$ref": "#/components/schemas/OpaqueId"
+                }
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SponsorshipRecord"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/Error400"
+          },
+          "401": {
+            "$ref": "#/components/responses/Error401"
+          },
+          "403": {
+            "$ref": "#/components/responses/Error403"
+          },
+          "404": {
+            "$ref": "#/components/responses/Error404"
+          },
+          "409": {
+            "$ref": "#/components/responses/Error409"
+          },
+          "422": {
+            "$ref": "#/components/responses/Error422"
+          },
+          "429": {
+            "$ref": "#/components/responses/Error429"
+          },
+          "503": {
+            "$ref": "#/components/responses/Error503"
+          },
+          "500": {
+            "$ref": "#/components/responses/Error500"
+          }
+        },
+        "parameters": [
+          {
+            "$ref": "#/components/parameters/IdPath"
+          }
+        ]
+      }
+    },
+    "/v1/budgets": {
+      "get": {
+        "operationId": "getBudgets",
+        "summary": "查询当前账户与项目该链预算",
+        "tags": [
+          "sponsorship"
+        ],
+        "description": "",
+        "responses": {
+          "200": {
+            "description": "成功查询；证据未知时仍为正常未知状态。",
+            "headers": {
+              "Cache-Control": {
+                "description": "会话、预算、许可和状态不由共享缓存保存。",
+                "schema": {
+                  "type": "string",
+                  "const": "no-store"
+                }
+              },
+              "X-Request-Id": {
+                "description": "本次投递requestId。",
+                "schema": {
+                  "$ref": "#/components/schemas/OpaqueId"
+                }
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/BudgetsResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/Error400"
+          },
+          "401": {
+            "$ref": "#/components/responses/Error401"
+          },
+          "403": {
+            "$ref": "#/components/responses/Error403"
+          },
+          "404": {
+            "$ref": "#/components/responses/Error404"
+          },
+          "409": {
+            "$ref": "#/components/responses/Error409"
+          },
+          "422": {
+            "$ref": "#/components/responses/Error422"
+          },
+          "429": {
+            "$ref": "#/components/responses/Error429"
+          },
+          "503": {
+            "$ref": "#/components/responses/Error503"
+          },
+          "500": {
+            "$ref": "#/components/responses/Error500"
+          }
+        },
+        "parameters": [
+          {
+            "$ref": "#/components/parameters/ChainIdQuery"
+          },
+          {
+            "$ref": "#/components/parameters/PeriodQuery"
+          }
+        ]
+      }
+    },
+    "/v1/operations": {
+      "post": {
+        "operationId": "registerOperation",
+        "summary": "登记操作查询线索，不广播",
+        "tags": [
+          "operations"
+        ],
+        "description": "",
+        "responses": {
+          "201": {
+            "description": "线索已登记；不据客户端报告设置accepted/executed。",
+            "headers": {
+              "Cache-Control": {
+                "description": "会话、预算、许可和状态不由共享缓存保存。",
+                "schema": {
+                  "type": "string",
+                  "const": "no-store"
+                }
+              },
+              "X-Request-Id": {
+                "description": "本次投递requestId。",
+                "schema": {
+                  "$ref": "#/components/schemas/OpaqueId"
+                }
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/OperationRecord"
+                }
+              }
+            }
+          },
+          "200": {
+            "description": "同键恢复原登记，状态仅由已验证证据更新。",
+            "headers": {
+              "Cache-Control": {
+                "description": "会话、预算、许可和状态不由共享缓存保存。",
+                "schema": {
+                  "type": "string",
+                  "const": "no-store"
+                }
+              },
+              "X-Request-Id": {
+                "description": "本次投递requestId。",
+                "schema": {
+                  "$ref": "#/components/schemas/OpaqueId"
+                }
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/OperationRecord"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/Error400"
+          },
+          "401": {
+            "$ref": "#/components/responses/Error401"
+          },
+          "403": {
+            "$ref": "#/components/responses/Error403"
+          },
+          "404": {
+            "$ref": "#/components/responses/Error404"
+          },
+          "409": {
+            "$ref": "#/components/responses/Error409"
+          },
+          "422": {
+            "$ref": "#/components/responses/Error422"
+          },
+          "429": {
+            "$ref": "#/components/responses/Error429"
+          },
+          "503": {
+            "$ref": "#/components/responses/Error503"
+          },
+          "500": {
+            "$ref": "#/components/responses/Error500"
+          }
+        },
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/OperationRegisterRequest"
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/operations/{userOpHash}": {
+      "get": {
+        "operationId": "getOperation",
+        "summary": "按链、EntryPoint及hash查询证据",
+        "tags": [
+          "operations"
+        ],
+        "description": "公开只读。未知三元组返回200 unknown记录；不能泄露会话/预算/私密提交线索。",
+        "responses": {
+          "200": {
+            "description": "成功查询；证据未知时仍为正常未知状态。",
+            "headers": {
+              "Cache-Control": {
+                "description": "会话、预算、许可和状态不由共享缓存保存。",
+                "schema": {
+                  "type": "string",
+                  "const": "no-store"
+                }
+              },
+              "X-Request-Id": {
+                "description": "本次投递requestId。",
+                "schema": {
+                  "$ref": "#/components/schemas/OpaqueId"
+                }
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/OperationRecord"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/Error400"
+          },
+          "401": {
+            "$ref": "#/components/responses/Error401"
+          },
+          "403": {
+            "$ref": "#/components/responses/Error403"
+          },
+          "404": {
+            "$ref": "#/components/responses/Error404"
+          },
+          "409": {
+            "$ref": "#/components/responses/Error409"
+          },
+          "422": {
+            "$ref": "#/components/responses/Error422"
+          },
+          "429": {
+            "$ref": "#/components/responses/Error429"
+          },
+          "503": {
+            "$ref": "#/components/responses/Error503"
+          },
+          "500": {
+            "$ref": "#/components/responses/Error500"
+          }
+        },
+        "security": [],
+        "parameters": [
+          {
+            "$ref": "#/components/parameters/UserOpHashPath"
+          },
+          {
+            "$ref": "#/components/parameters/ChainIdQuery"
+          },
+          {
+            "$ref": "#/components/parameters/EntryPointQuery"
+          }
+        ]
+      }
+    },
+    "/v1/delegations/relay": {
+      "post": {
+        "operationId": "relayDelegation",
+        "summary": "独立传输撤销或支持的委托授权",
+        "tags": [
+          "delegation"
+        ],
+        "description": "",
+        "responses": {
+          "202": {
+            "description": "待发送记录、Relayer nonce及预算已原子持久化。",
+            "headers": {
+              "Cache-Control": {
+                "description": "会话、预算、许可和状态不由共享缓存保存。",
+                "schema": {
+                  "type": "string",
+                  "const": "no-store"
+                }
+              },
+              "X-Request-Id": {
+                "description": "本次投递requestId。",
+                "schema": {
+                  "$ref": "#/components/schemas/OpaqueId"
+                }
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/DelegationRelayRecord"
+                }
+              }
+            }
+          },
+          "200": {
+            "description": "同幂等键或同授权摘要返回原relayId；不再出资。",
+            "headers": {
+              "Cache-Control": {
+                "description": "会话、预算、许可和状态不由共享缓存保存。",
+                "schema": {
+                  "type": "string",
+                  "const": "no-store"
+                }
+              },
+              "X-Request-Id": {
+                "description": "本次投递requestId。",
+                "schema": {
+                  "$ref": "#/components/schemas/OpaqueId"
+                }
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/DelegationRelayRecord"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/Error400"
+          },
+          "401": {
+            "$ref": "#/components/responses/Error401"
+          },
+          "403": {
+            "$ref": "#/components/responses/Error403"
+          },
+          "404": {
+            "$ref": "#/components/responses/Error404"
+          },
+          "409": {
+            "$ref": "#/components/responses/Error409"
+          },
+          "422": {
+            "$ref": "#/components/responses/Error422"
+          },
+          "429": {
+            "$ref": "#/components/responses/Error429"
+          },
+          "503": {
+            "$ref": "#/components/responses/Error503"
+          },
+          "500": {
+            "$ref": "#/components/responses/Error500"
+          }
+        },
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/DelegationRelayRequest"
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/delegations/relay/{id}": {
+      "get": {
+        "operationId": "getDelegationRelay",
+        "summary": "查询原生交易、授权与确认结果",
+        "tags": [
+          "delegation"
+        ],
+        "description": "",
+        "responses": {
+          "200": {
+            "description": "成功查询；证据未知时仍为正常未知状态。",
+            "headers": {
+              "Cache-Control": {
+                "description": "会话、预算、许可和状态不由共享缓存保存。",
+                "schema": {
+                  "type": "string",
+                  "const": "no-store"
+                }
+              },
+              "X-Request-Id": {
+                "description": "本次投递requestId。",
+                "schema": {
+                  "$ref": "#/components/schemas/OpaqueId"
+                }
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/DelegationRelayRecord"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/Error400"
+          },
+          "401": {
+            "$ref": "#/components/responses/Error401"
+          },
+          "403": {
+            "$ref": "#/components/responses/Error403"
+          },
+          "404": {
+            "$ref": "#/components/responses/Error404"
+          },
+          "409": {
+            "$ref": "#/components/responses/Error409"
+          },
+          "422": {
+            "$ref": "#/components/responses/Error422"
+          },
+          "429": {
+            "$ref": "#/components/responses/Error429"
+          },
+          "503": {
+            "$ref": "#/components/responses/Error503"
+          },
+          "500": {
+            "$ref": "#/components/responses/Error500"
+          }
+        },
+        "parameters": [
+          {
+            "$ref": "#/components/parameters/IdPath"
+          }
+        ]
+      }
+    }
+  },
+  "components": {
+    "securitySchemes": {
+      "BearerSession": {
+        "type": "http",
+        "scheme": "bearer",
+        "bearerFormat": "opaque",
+        "description": "root-eip191-65挑战建立的短时账户/链/项目会话；不使用cookie或refresh token。"
+      }
+    },
+    "parameters": {
+      "ChainIdQuery": {
+        "name": "chainId",
+        "in": "query",
+        "required": true,
+        "schema": {
+          "$ref": "#/components/schemas/ChainIdString"
+        },
+        "description": "必须明确所选链，禁止按地址猜测。"
+      },
+      "EntryPointQuery": {
+        "name": "entryPoint",
+        "in": "query",
+        "required": true,
+        "schema": {
+          "$ref": "#/components/schemas/NonzeroAddress"
+        },
+        "description": "操作身份的一部分。"
+      },
+      "PeriodQuery": {
+        "name": "period",
+        "in": "query",
+        "required": true,
+        "schema": {
+          "$ref": "#/components/schemas/PeriodId"
+        },
+        "description": "服务配置的预算周期；不代表可以自选额度主体。"
+      },
+      "IdPath": {
+        "name": "id",
+        "in": "path",
+        "required": true,
+        "schema": {
+          "$ref": "#/components/schemas/OpaqueId"
+        }
+      },
+      "UserOpHashPath": {
+        "name": "userOpHash",
+        "in": "path",
+        "required": true,
+        "schema": {
+          "$ref": "#/components/schemas/Bytes32"
+        }
+      }
+    },
+    "responses": {
+      "Error400": {
+        "description": "候选错误；code/action见ERROR_CODES.md。",
+        "headers": {
+          "Cache-Control": {
+            "description": "会话、预算、许可和状态不由共享缓存保存。",
+            "schema": {
+              "type": "string",
+              "const": "no-store"
+            }
+          },
+          "X-Request-Id": {
+            "description": "本次投递requestId。",
+            "schema": {
+              "$ref": "#/components/schemas/OpaqueId"
+            }
+          }
+        },
+        "content": {
+          "application/json": {
+            "schema": {
+              "$ref": "#/components/schemas/Error400Envelope"
+            }
+          }
+        },
+        "x-errorCodes": [
+          "INVALID_REQUEST"
+        ]
+      },
+      "Error401": {
+        "description": "候选错误；code/action见ERROR_CODES.md。",
+        "headers": {
+          "Cache-Control": {
+            "description": "会话、预算、许可和状态不由共享缓存保存。",
+            "schema": {
+              "type": "string",
+              "const": "no-store"
+            }
+          },
+          "X-Request-Id": {
+            "description": "本次投递requestId。",
+            "schema": {
+              "$ref": "#/components/schemas/OpaqueId"
+            }
+          },
+          "WWW-Authenticate": {
+            "schema": {
+              "type": "string",
+              "const": "Bearer"
+            }
+          }
+        },
+        "content": {
+          "application/json": {
+            "schema": {
+              "$ref": "#/components/schemas/Error401Envelope"
+            }
+          }
+        },
+        "x-errorCodes": [
+          "AUTH_REQUIRED",
+          "SESSION_EXPIRED",
+          "INVALID_SIGNATURE"
+        ]
+      },
+      "Error403": {
+        "description": "候选错误；code/action见ERROR_CODES.md。",
+        "headers": {
+          "Cache-Control": {
+            "description": "会话、预算、许可和状态不由共享缓存保存。",
+            "schema": {
+              "type": "string",
+              "const": "no-store"
+            }
+          },
+          "X-Request-Id": {
+            "description": "本次投递requestId。",
+            "schema": {
+              "$ref": "#/components/schemas/OpaqueId"
+            }
+          }
+        },
+        "content": {
+          "application/json": {
+            "schema": {
+              "$ref": "#/components/schemas/Error403Envelope"
+            }
+          }
+        },
+        "x-errorCodes": [
+          "AUTH_SCOPE_MISMATCH",
+          "SPONSORSHIP_DENIED",
+          "RELAY_DENIED"
+        ]
+      },
+      "Error404": {
+        "description": "候选错误；code/action见ERROR_CODES.md。",
+        "headers": {
+          "Cache-Control": {
+            "description": "会话、预算、许可和状态不由共享缓存保存。",
+            "schema": {
+              "type": "string",
+              "const": "no-store"
+            }
+          },
+          "X-Request-Id": {
+            "description": "本次投递requestId。",
+            "schema": {
+              "$ref": "#/components/schemas/OpaqueId"
+            }
+          }
+        },
+        "content": {
+          "application/json": {
+            "schema": {
+              "$ref": "#/components/schemas/Error404Envelope"
+            }
+          }
+        },
+        "x-errorCodes": [
+          "RESOURCE_NOT_FOUND"
+        ]
+      },
+      "Error409": {
+        "description": "候选错误；code/action见ERROR_CODES.md。",
+        "headers": {
+          "Cache-Control": {
+            "description": "会话、预算、许可和状态不由共享缓存保存。",
+            "schema": {
+              "type": "string",
+              "const": "no-store"
+            }
+          },
+          "X-Request-Id": {
+            "description": "本次投递requestId。",
+            "schema": {
+              "$ref": "#/components/schemas/OpaqueId"
+            }
+          }
+        },
+        "content": {
+          "application/json": {
+            "schema": {
+              "$ref": "#/components/schemas/Error409Envelope"
+            },
+            "examples": {
+              "budget": {
+                "$ref": "#/components/examples/BudgetError"
+              }
+            }
+          }
+        },
+        "x-errorCodes": [
+          "CHALLENGE_REPLAY",
+          "CHALLENGE_EXPIRED",
+          "IDEMPOTENCY_CONFLICT",
+          "IDEMPOTENCY_RESULT_EXPIRED",
+          "NONCE_CHANGED",
+          "MANIFEST_CHANGED",
+          "DELEGATION_CONFLICT",
+          "QUOTE_EXPIRED",
+          "BUDGET_EXCEEDED"
+        ]
+      },
+      "Error422": {
+        "description": "候选错误；code/action见ERROR_CODES.md。",
+        "headers": {
+          "Cache-Control": {
+            "description": "会话、预算、许可和状态不由共享缓存保存。",
+            "schema": {
+              "type": "string",
+              "const": "no-store"
+            }
+          },
+          "X-Request-Id": {
+            "description": "本次投递requestId。",
+            "schema": {
+              "$ref": "#/components/schemas/OpaqueId"
+            }
+          }
+        },
+        "content": {
+          "application/json": {
+            "schema": {
+              "$ref": "#/components/schemas/Error422Envelope"
+            }
+          }
+        },
+        "x-errorCodes": [
+          "UNSUPPORTED_CHAIN",
+          "DEPLOYMENT_MISMATCH",
+          "INVALID_AUTHORIZATION",
+          "INVALID_OPERATION",
+          "INVALID_TIME_WINDOW",
+          "COST_CAP_EXCEEDED"
+        ]
+      },
+      "Error429": {
+        "description": "候选错误；code/action见ERROR_CODES.md。",
+        "headers": {
+          "Cache-Control": {
+            "description": "会话、预算、许可和状态不由共享缓存保存。",
+            "schema": {
+              "type": "string",
+              "const": "no-store"
+            }
+          },
+          "X-Request-Id": {
+            "description": "本次投递requestId。",
+            "schema": {
+              "$ref": "#/components/schemas/OpaqueId"
+            }
+          },
+          "Retry-After": {
+            "description": "可选等待秒数；仍重试同请求。",
+            "schema": {
+              "$ref": "#/components/schemas/UInt256String"
+            }
+          }
+        },
+        "content": {
+          "application/json": {
+            "schema": {
+              "$ref": "#/components/schemas/Error429Envelope"
+            }
+          }
+        },
+        "x-errorCodes": [
+          "RATE_LIMITED"
+        ]
+      },
+      "Error503": {
+        "description": "候选错误；code/action见ERROR_CODES.md。",
+        "headers": {
+          "Cache-Control": {
+            "description": "会话、预算、许可和状态不由共享缓存保存。",
+            "schema": {
+              "type": "string",
+              "const": "no-store"
+            }
+          },
+          "X-Request-Id": {
+            "description": "本次投递requestId。",
+            "schema": {
+              "$ref": "#/components/schemas/OpaqueId"
+            }
+          }
+        },
+        "content": {
+          "application/json": {
+            "schema": {
+              "$ref": "#/components/schemas/Error503Envelope"
+            }
+          }
+        },
+        "x-errorCodes": [
+          "UPSTREAM_UNAVAILABLE",
+          "SERVICE_UNAVAILABLE"
+        ]
+      },
+      "Error500": {
+        "description": "候选错误；code/action见ERROR_CODES.md。",
+        "headers": {
+          "Cache-Control": {
+            "description": "会话、预算、许可和状态不由共享缓存保存。",
+            "schema": {
+              "type": "string",
+              "const": "no-store"
+            }
+          },
+          "X-Request-Id": {
+            "description": "本次投递requestId。",
+            "schema": {
+              "$ref": "#/components/schemas/OpaqueId"
+            }
+          }
+        },
+        "content": {
+          "application/json": {
+            "schema": {
+              "$ref": "#/components/schemas/Error500Envelope"
+            }
+          }
+        },
+        "x-errorCodes": [
+          "INTERNAL_ERROR"
+        ]
+      }
+    },
+    "schemas": {
+      "SchemaVersion": {
+        "type": "string",
+        "const": "1"
+      },
+      "OpaqueId": {
+        "type": "string",
+        "minLength": 16,
+        "maxLength": 128,
+        "description": "HTTP opaque标识，不是链上bytes32；不得从其外观推断签名或哈希。",
+        "pattern": "^[A-Za-z0-9_-]{16,128}$(?![\\s\\S])"
+      },
+      "IdempotencyKey": {
+        "type": "string",
+        "minLength": 16,
+        "maxLength": 128,
+        "description": "所有POST统一body字段；同operation/project/account/chain范围内同键同内容复用逻辑结果。",
+        "pattern": "^[A-Za-z0-9_-]{16,128}$(?![\\s\\S])"
+      },
+      "ManifestVersion": {
+        "type": "string",
+        "minLength": 1,
+        "maxLength": 128,
+        "description": "不可变链清单版本ID。",
+        "pattern": "^[A-Za-z0-9._-]+$(?![\\s\\S])"
+      },
+      "PolicyId": {
+        "type": "string",
+        "minLength": 1,
+        "maxLength": 128,
+        "description": "服务端冻结配置的策略ID；不是客户端可自由选择的额度主体。",
+        "pattern": "^[A-Za-z0-9._:-]+$(?![\\s\\S])"
+      },
+      "PeriodId": {
+        "type": "string",
+        "minLength": 1,
+        "maxLength": 64,
+        "description": "服务配置定义的预算周期ID；改变该参数不能绕过当前额度。",
+        "pattern": "^[A-Za-z0-9._:-]+$(?![\\s\\S])"
+      },
+      "UInt256String": {
+        "type": "string",
+        "pattern": "^(?:0|[1-9][0-9]{0,76}|10[0-9]{76}|11[0-4][0-9]{75}|115[0-6][0-9]{74}|1157[0-8][0-9]{73}|11579[0-1][0-9]{72}|1157920[0-7][0-9]{70}|11579208[0-8][0-9]{69}|115792089[0-1][0-9]{68}|1157920892[0-2][0-9]{67}|11579208923[0-6][0-9]{66}|115792089237[0-2][0-9]{65}|11579208923730[0-9]{64}|11579208923731[0-5][0-9]{63}|1157920892373160[0-9]{62}|1157920892373161[0-8][0-9]{61}|11579208923731619[0-4][0-9]{60}|115792089237316195[0-3][0-9]{59}|1157920892373161954[0-1][0-9]{58}|11579208923731619542[0-2][0-9]{57}|115792089237316195423[0-4][0-9]{56}|1157920892373161954235[0-6][0-9]{55}|115792089237316195423570[0-8][0-9]{53}|1157920892373161954235709[0-7][0-9]{52}|11579208923731619542357098[0-4][0-9]{51}|11579208923731619542357098500[0-7][0-9]{48}|115792089237316195423570985008[0-5][0-9]{47}|1157920892373161954235709850086[0-7][0-9]{46}|11579208923731619542357098500868[0-6][0-9]{45}|115792089237316195423570985008687[0-8][0-9]{44}|11579208923731619542357098500868790[0-6][0-9]{42}|115792089237316195423570985008687907[0-7][0-9]{41}|1157920892373161954235709850086879078[0-4][0-9]{40}|11579208923731619542357098500868790785[0-2][0-9]{39}|115792089237316195423570985008687907853[0-1][0-9]{38}|1157920892373161954235709850086879078532[0-5][0-9]{37}|11579208923731619542357098500868790785326[0-8][0-9]{36}|115792089237316195423570985008687907853269[0-8][0-9]{35}|1157920892373161954235709850086879078532699[0-7][0-9]{34}|11579208923731619542357098500868790785326998[0-3][0-9]{33}|115792089237316195423570985008687907853269984[0-5][0-9]{32}|1157920892373161954235709850086879078532699846[0-5][0-9]{31}|11579208923731619542357098500868790785326998466[0-4][0-9]{30}|115792089237316195423570985008687907853269984665[0-5][0-9]{29}|1157920892373161954235709850086879078532699846656[0-3][0-9]{28}|115792089237316195423570985008687907853269984665640[0-4][0-9]{26}|1157920892373161954235709850086879078532699846656405[0-5][0-9]{25}|11579208923731619542357098500868790785326998466564056[0-3][0-9]{24}|1157920892373161954235709850086879078532699846656405640[0-2][0-9]{22}|11579208923731619542357098500868790785326998466564056403[0-8][0-9]{21}|115792089237316195423570985008687907853269984665640564039[0-3][0-9]{20}|1157920892373161954235709850086879078532699846656405640394[0-4][0-9]{19}|11579208923731619542357098500868790785326998466564056403945[0-6][0-9]{18}|115792089237316195423570985008687907853269984665640564039457[0-4][0-9]{17}|1157920892373161954235709850086879078532699846656405640394575[0-7][0-9]{16}|11579208923731619542357098500868790785326998466564056403945758[0-3][0-9]{15}|11579208923731619542357098500868790785326998466564056403945758400[0-6][0-9]{12}|115792089237316195423570985008687907853269984665640564039457584007[0-8][0-9]{11}|11579208923731619542357098500868790785326998466564056403945758400790[0-9]{10}|11579208923731619542357098500868790785326998466564056403945758400791[0-2][0-9]{9}|1157920892373161954235709850086879078532699846656405640394575840079130[0-9]{8}|1157920892373161954235709850086879078532699846656405640394575840079131[0-1][0-9]{7}|11579208923731619542357098500868790785326998466564056403945758400791312[0-8][0-9]{6}|115792089237316195423570985008687907853269984665640564039457584007913129[0-5][0-9]{5}|1157920892373161954235709850086879078532699846656405640394575840079131296[0-2][0-9]{4}|11579208923731619542357098500868790785326998466564056403945758400791312963[0-8][0-9]{3}|115792089237316195423570985008687907853269984665640564039457584007913129639[0-8][0-9]{2}|1157920892373161954235709850086879078532699846656405640394575840079131296399[0-2][0-9]{1}|11579208923731619542357098500868790785326998466564056403945758400791312963993[0-4]|115792089237316195423570985008687907853269984665640564039457584007913129639935)$(?![\\s\\S])",
+        "maxLength": 78,
+        "description": "规范十进制uint256字符串，含0；不接受前导零、浮点数或hex quantity。",
+        "x-maximumDecimal": "115792089237316195423570985008687907853269984665640564039457584007913129639935",
+        "x-minimumDecimal": "0"
+      },
+      "ChainIdString": {
+        "type": "string",
+        "pattern": "^(?:[1-9][0-9]{0,76}|10[0-9]{76}|11[0-4][0-9]{75}|115[0-6][0-9]{74}|1157[0-8][0-9]{73}|11579[0-1][0-9]{72}|1157920[0-7][0-9]{70}|11579208[0-8][0-9]{69}|115792089[0-1][0-9]{68}|1157920892[0-2][0-9]{67}|11579208923[0-6][0-9]{66}|115792089237[0-2][0-9]{65}|11579208923730[0-9]{64}|11579208923731[0-5][0-9]{63}|1157920892373160[0-9]{62}|1157920892373161[0-8][0-9]{61}|11579208923731619[0-4][0-9]{60}|115792089237316195[0-3][0-9]{59}|1157920892373161954[0-1][0-9]{58}|11579208923731619542[0-2][0-9]{57}|115792089237316195423[0-4][0-9]{56}|1157920892373161954235[0-6][0-9]{55}|115792089237316195423570[0-8][0-9]{53}|1157920892373161954235709[0-7][0-9]{52}|11579208923731619542357098[0-4][0-9]{51}|11579208923731619542357098500[0-7][0-9]{48}|115792089237316195423570985008[0-5][0-9]{47}|1157920892373161954235709850086[0-7][0-9]{46}|11579208923731619542357098500868[0-6][0-9]{45}|115792089237316195423570985008687[0-8][0-9]{44}|11579208923731619542357098500868790[0-6][0-9]{42}|115792089237316195423570985008687907[0-7][0-9]{41}|1157920892373161954235709850086879078[0-4][0-9]{40}|11579208923731619542357098500868790785[0-2][0-9]{39}|115792089237316195423570985008687907853[0-1][0-9]{38}|1157920892373161954235709850086879078532[0-5][0-9]{37}|11579208923731619542357098500868790785326[0-8][0-9]{36}|115792089237316195423570985008687907853269[0-8][0-9]{35}|1157920892373161954235709850086879078532699[0-7][0-9]{34}|11579208923731619542357098500868790785326998[0-3][0-9]{33}|115792089237316195423570985008687907853269984[0-5][0-9]{32}|1157920892373161954235709850086879078532699846[0-5][0-9]{31}|11579208923731619542357098500868790785326998466[0-4][0-9]{30}|115792089237316195423570985008687907853269984665[0-5][0-9]{29}|1157920892373161954235709850086879078532699846656[0-3][0-9]{28}|115792089237316195423570985008687907853269984665640[0-4][0-9]{26}|1157920892373161954235709850086879078532699846656405[0-5][0-9]{25}|11579208923731619542357098500868790785326998466564056[0-3][0-9]{24}|1157920892373161954235709850086879078532699846656405640[0-2][0-9]{22}|11579208923731619542357098500868790785326998466564056403[0-8][0-9]{21}|115792089237316195423570985008687907853269984665640564039[0-3][0-9]{20}|1157920892373161954235709850086879078532699846656405640394[0-4][0-9]{19}|11579208923731619542357098500868790785326998466564056403945[0-6][0-9]{18}|115792089237316195423570985008687907853269984665640564039457[0-4][0-9]{17}|1157920892373161954235709850086879078532699846656405640394575[0-7][0-9]{16}|11579208923731619542357098500868790785326998466564056403945758[0-3][0-9]{15}|11579208923731619542357098500868790785326998466564056403945758400[0-6][0-9]{12}|115792089237316195423570985008687907853269984665640564039457584007[0-8][0-9]{11}|11579208923731619542357098500868790785326998466564056403945758400790[0-9]{10}|11579208923731619542357098500868790785326998466564056403945758400791[0-2][0-9]{9}|1157920892373161954235709850086879078532699846656405640394575840079130[0-9]{8}|1157920892373161954235709850086879078532699846656405640394575840079131[0-1][0-9]{7}|11579208923731619542357098500868790785326998466564056403945758400791312[0-8][0-9]{6}|115792089237316195423570985008687907853269984665640564039457584007913129[0-5][0-9]{5}|1157920892373161954235709850086879078532699846656405640394575840079131296[0-2][0-9]{4}|11579208923731619542357098500868790785326998466564056403945758400791312963[0-8][0-9]{3}|115792089237316195423570985008687907853269984665640564039457584007913129639[0-8][0-9]{2}|1157920892373161954235709850086879078532699846656405640394575840079131296399[0-2][0-9]{1}|11579208923731619542357098500868790785326998466564056403945758400791312963993[0-4]|115792089237316195423570985008687907853269984665640564039457584007913129639935)$(?![\\s\\S])",
+        "maxLength": 78,
+        "description": "非零chainId；还须在已配置支持清单中。产品拒绝authorization chain_id=0。",
+        "x-maximumDecimal": "115792089237316195423570985008687907853269984665640564039457584007913129639935",
+        "x-minimumDecimal": "1"
+      },
+      "UInt128String": {
+        "type": "string",
+        "pattern": "^(?:0|[1-9][0-9]{0,37}|[1-2][0-9]{38}|3[0-3][0-9]{37}|340[0-1][0-9]{35}|3402[0-7][0-9]{34}|34028[0-1][0-9]{33}|340282[0-2][0-9]{32}|3402823[0-5][0-9]{31}|34028236[0-5][0-9]{30}|340282366[0-8][0-9]{29}|3402823669[0-1][0-9]{28}|340282366920[0-8][0-9]{26}|3402823669209[0-2][0-9]{25}|34028236692093[0-7][0-9]{24}|340282366920938[0-3][0-9]{23}|3402823669209384[0-5][0-9]{22}|34028236692093846[0-2][0-9]{21}|340282366920938463[0-3][0-9]{20}|3402823669209384634[0-5][0-9]{19}|34028236692093846346[0-2][0-9]{18}|340282366920938463463[0-2][0-9]{17}|3402823669209384634633[0-6][0-9]{16}|34028236692093846346337[0-3][0-9]{15}|340282366920938463463374[0-5][0-9]{14}|34028236692093846346337460[0-6][0-9]{12}|340282366920938463463374607[0-3][0-9]{11}|3402823669209384634633746074[0-2][0-9]{10}|340282366920938463463374607430[0-9]{9}|340282366920938463463374607431[0-6][0-9]{8}|3402823669209384634633746074317[0-5][0-9]{7}|34028236692093846346337460743176[0-7][0-9]{6}|340282366920938463463374607431768[0-1][0-9]{5}|34028236692093846346337460743176820[0-9]{4}|340282366920938463463374607431768210[0-9]{3}|340282366920938463463374607431768211[0-3][0-9]{2}|3402823669209384634633746074317682114[0-4][0-9]{1}|34028236692093846346337460743176821145[0-4]|340282366920938463463374607431768211455)$(?![\\s\\S])",
+        "maxLength": 39,
+        "description": "规范十进制uint128容量；实际v0.9 Gas/price字段另受EntryPointGasValue约束。",
+        "x-maximumDecimal": "340282366920938463463374607431768211455",
+        "x-minimumDecimal": "0"
+      },
+      "EntryPointGasValue": {
+        "type": "string",
+        "pattern": "^(?:0|[1-9][0-9]{0,35}|1[0-2][0-9]{35}|13[0-1][0-9]{34}|132[0-8][0-9]{33}|1329[0-1][0-9]{32}|13292[0-1][0-9]{31}|132922[0-6][0-9]{30}|1329227[0-8][0-9]{29}|13292279[0-8][0-9]{28}|132922799[0-4][0-9]{27}|1329227995[0-6][0-9]{26}|13292279957[0-7][0-9]{25}|132922799578[0-3][0-9]{24}|1329227995784[0-8][0-9]{23}|132922799578490[0-9]{22}|132922799578491[0-4][0-9]{21}|1329227995784915[0-7][0-9]{20}|13292279957849158[0-6][0-9]{19}|132922799578491587[0-1][0-9]{18}|1329227995784915872[0-8][0-9]{17}|132922799578491587290[0-2][0-9]{15}|1329227995784915872903[0-7][0-9]{14}|132922799578491587290380[0-6][0-9]{12}|13292279957849158729038070[0-5][0-9]{10}|1329227995784915872903807060[0-1][0-9]{8}|13292279957849158729038070602[0-7][0-9]{7}|1329227995784915872903807060280[0-2][0-9]{5}|13292279957849158729038070602803[0-3][0-9]{4}|132922799578491587290380706028034[0-3][0-9]{3}|1329227995784915872903807060280344[0-4][0-9]{2}|13292279957849158729038070602803445[0-6][0-9]{1}|132922799578491587290380706028034457[0-4]|1329227995784915872903807060280344575)$(?![\\s\\S])",
+        "maxLength": 37,
+        "description": "EntryPoint v0.9.0 AA94约束：七个Gas/price字段逐项<=2^120-1；ABI容量不能代替本限制。",
+        "x-maximumDecimal": "1329227995784915872903807060280344575",
+        "x-minimumDecimal": "0"
+      },
+      "TimestampSeconds": {
+        "type": "string",
+        "pattern": "^(?:0|[1-9][0-9]{0,13}|1[0-3][0-9]{13}|140[0-6][0-9]{11}|1407[0-2][0-9]{10}|14073[0-6][0-9]{9}|140737[0-3][0-9]{8}|1407374[0-7][0-9]{7}|14073748[0-7][0-9]{6}|140737488[0-2][0-9]{5}|1407374883[0-4][0-9]{4}|14073748835[0-4][0-9]{3}|140737488355[0-2][0-9]{2}|1407374883553[0-1][0-9]{1}|14073748835532[0-6]|140737488355327)$(?![\\s\\S])",
+        "maxLength": 15,
+        "description": "Unix seconds十进制字符串。本候选禁用uint48最高位block-range，仅接受<2^47。",
+        "x-maximumDecimal": "140737488355327",
+        "x-minimumDecimal": "0"
+      },
+      "AuthorizationNonce": {
+        "type": "string",
+        "pattern": "^(?:0|[1-9][0-9]{0,18}|1[0-7][0-9]{18}|18[0-3][0-9]{17}|184[0-3][0-9]{16}|1844[0-5][0-9]{15}|18446[0-6][0-9]{14}|184467[0-3][0-9]{13}|1844674[0-3][0-9]{12}|184467440[0-6][0-9]{10}|1844674407[0-2][0-9]{9}|18446744073[0-6][0-9]{8}|1844674407370[0-8][0-9]{6}|18446744073709[0-4][0-9]{5}|184467440737095[0-4][0-9]{4}|18446744073709550[0-9]{3}|18446744073709551[0-5][0-9]{2}|1844674407370955160[0-9]{1}|1844674407370955161[0-3]|18446744073709551614)$(?![\\s\\S])",
+        "maxLength": 20,
+        "description": "授权nonce：0..2^64-2，处理授权时需能够递增；不同于uint256 EntryPoint nonce。",
+        "x-maximumDecimal": "18446744073709551614",
+        "x-minimumDecimal": "0"
+      },
+      "Address": {
+        "type": "string",
+        "minLength": 42,
+        "maxLength": 42,
+        "description": "20字节小写地址；SIWE原文内校验和文本另按签名原文处理。",
+        "pattern": "^0x[0-9a-f]{40}$(?![\\s\\S])"
+      },
+      "NonzeroAddress": {
+        "allOf": [
+          {
+            "$ref": "#/components/schemas/Address"
+          },
+          {
+            "not": {
+              "const": "0x0000000000000000000000000000000000000000"
+            }
+          }
+        ],
+        "description": "非零地址；仍需校验部署、用途和manifest。"
+      },
+      "Bytes32": {
+        "type": "string",
+        "minLength": 66,
+        "maxLength": 66,
+        "description": "32字节小写hex；不与HTTP opaque ID混用。",
+        "pattern": "^0x[0-9a-f]{64}$(?![\\s\\S])"
+      },
+      "NonzeroBytes32": {
+        "allOf": [
+          {
+            "$ref": "#/components/schemas/Bytes32"
+          },
+          {
+            "not": {
+              "const": "0x0000000000000000000000000000000000000000000000000000000000000000"
+            }
+          }
+        ]
+      },
+      "HexData": {
+        "type": "string",
+        "minLength": 2,
+        "maxLength": 131074,
+        "description": "小写0x偶数字节串；transport上限不是业务N/D验收上限。",
+        "pattern": "^0x(?:[0-9a-f]{2})*$(?![\\s\\S])"
+      },
+      "Signature65": {
+        "type": "string",
+        "minLength": 132,
+        "maxLength": 132,
+        "description": "低s规范65字节secp256k1签名；根EIP191及PM签名v只能27/28。结构校验不证明恢复账户正确。",
+        "pattern": "^0x[0-9a-f]{128}(?:1b|1c)$(?![\\s\\S])"
+      },
+      "PaymasterData352": {
+        "type": "string",
+        "minLength": 706,
+        "maxLength": 706,
+        "description": "候选v1 ABI编码352字节；自身完整签名包含于最终账户userOpHash，不使用可选suffix。",
+        "pattern": "^0x[0-9a-f]{704}$(?![\\s\\S])"
+      },
+      "HttpsUri": {
+        "type": "string",
+        "format": "uri",
+        "maxLength": 2048,
+        "pattern": "^https://[^\\s]+$(?![\\s\\S])"
+      },
+      "AccountWindow": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "validAfter": {
+            "$ref": "#/components/schemas/TimestampSeconds"
+          },
+          "validUntil": {
+            "$ref": "#/components/schemas/TimestampSeconds"
+          }
+        },
+        "required": [
+          "validAfter",
+          "validUntil"
+        ],
+        "description": "链上uint48类型的时间窗，值限制到uint47；开左闭右。",
+        "x-semanticConstraints": [
+          "0 <= validAfter < validUntil < 2^47",
+          "仅validAfter < block.timestamp <= validUntil可执行；与server quote expiry分开。"
+        ]
+      },
+      "Eip7702Authorization": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "chainId": {
+            "$ref": "#/components/schemas/ChainIdString"
+          },
+          "address": {
+            "$ref": "#/components/schemas/Address"
+          },
+          "nonce": {
+            "$ref": "#/components/schemas/AuthorizationNonce"
+          },
+          "yParity": {
+            "type": "string",
+            "enum": [
+              "0",
+              "1"
+            ]
+          },
+          "r": {
+            "$ref": "#/components/schemas/Bytes32"
+          },
+          "s": {
+            "$ref": "#/components/schemas/Bytes32"
+          }
+        },
+        "required": [
+          "chainId",
+          "address",
+          "nonce",
+          "yParity",
+          "r",
+          "s"
+        ],
+        "description": "独立REST授权对象，不是PackedUserOperation字段。目标address可为撤销零地址。",
+        "x-semanticConstraints": [
+          "必须合法secp256k1签名且s低、r/s非零并在曲线范围；ecrecover=会话account。",
+          "chainId非零、必须等于请求链；nonce在该发送路径可使用。",
+          "转换Bundler RPC时chainId/nonce/yParity/r/s按其quantity规则转换，不原样套用固定宽度REST r/s。"
+        ]
+      },
+      "AuthorizationContext": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "chainId": {
+            "$ref": "#/components/schemas/ChainIdString"
+          },
+          "address": {
+            "$ref": "#/components/schemas/NonzeroAddress"
+          },
+          "nonce": {
+            "$ref": "#/components/schemas/AuthorizationNonce"
+          },
+          "eip7702Auth": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/Eip7702Authorization"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          }
+        },
+        "required": [
+          "chainId",
+          "address",
+          "nonce",
+          "eip7702Auth"
+        ],
+        "description": "首次启用预期授权tuple。无签名也可准备/请求许可，但不是授权证明；PM检查实际生效D。",
+        "x-semanticConstraints": [
+          "chainId=顶层chainId；address=expectedDelegate；签名存在时其tuple逐字段相等且恢复账户正确。",
+          "首次未委托必须提供context；已委托目标D的日常操作使用null；其他D转显式迁移。"
+        ]
+      },
+      "UnsignedSponsoredUserOperation": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "sender": {
+            "$ref": "#/components/schemas/NonzeroAddress"
+          },
+          "nonce": {
+            "$ref": "#/components/schemas/UInt256String"
+          },
+          "factory": {
+            "type": "string",
+            "const": "0x7702"
+          },
+          "factoryData": {
+            "type": "string",
+            "const": "0x"
+          },
+          "callData": {
+            "$ref": "#/components/schemas/HexData"
+          },
+          "callGasLimit": {
+            "$ref": "#/components/schemas/EntryPointGasValue"
+          },
+          "verificationGasLimit": {
+            "$ref": "#/components/schemas/EntryPointGasValue"
+          },
+          "preVerificationGas": {
+            "$ref": "#/components/schemas/EntryPointGasValue"
+          },
+          "maxFeePerGas": {
+            "$ref": "#/components/schemas/EntryPointGasValue"
+          },
+          "maxPriorityFeePerGas": {
+            "$ref": "#/components/schemas/EntryPointGasValue"
+          },
+          "paymaster": {
+            "$ref": "#/components/schemas/NonzeroAddress"
+          },
+          "paymasterVerificationGasLimit": {
+            "$ref": "#/components/schemas/EntryPointGasValue"
+          },
+          "paymasterPostOpGasLimit": {
+            "$ref": "#/components/schemas/EntryPointGasValue"
+          }
+        },
+        "required": [
+          "sender",
+          "nonce",
+          "factory",
+          "factoryData",
+          "callData",
+          "callGasLimit",
+          "verificationGasLimit",
+          "preVerificationGas",
+          "maxFeePerGas",
+          "maxPriorityFeePerGas",
+          "paymaster",
+          "paymasterVerificationGasLimit",
+          "paymasterPostOpGasLimit"
+        ],
+        "description": "未打包ERC-7769风格字段，但REST quantity为decimal。无账户signature和最终paymasterData；MVP marker始终保留。",
+        "x-semanticConstraints": [
+          "sender=请求account=会话account；PM/EP/D与manifest匹配。",
+          "maxPriorityFeePerGas<=maxFeePerGas；七个Gas/price逐项<=2^120-1。",
+          "MVP key=0；nonce仍使用完整uint256表示，禁止截断。",
+          "调用ABI必须executeBatch；calls.length在1..16，sum(calls[i].data.length)<=32768，不含ABI头或padding；费用口径及所需prefund按冻结配置校验。"
+        ]
+      },
+      "AuthChallengeRequest": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "schemaVersion": {
+            "$ref": "#/components/schemas/SchemaVersion"
+          },
+          "idempotencyKey": {
+            "$ref": "#/components/schemas/IdempotencyKey"
+          },
+          "chainId": {
+            "$ref": "#/components/schemas/ChainIdString"
+          },
+          "account": {
+            "$ref": "#/components/schemas/NonzeroAddress"
+          }
+        },
+        "required": [
+          "schemaVersion",
+          "idempotencyKey",
+          "chainId",
+          "account"
+        ]
+      },
+      "AuthChallengeResponse": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "schemaVersion": {
+            "$ref": "#/components/schemas/SchemaVersion"
+          },
+          "requestId": {
+            "$ref": "#/components/schemas/OpaqueId"
+          },
+          "challengeId": {
+            "$ref": "#/components/schemas/OpaqueId"
+          },
+          "projectId": {
+            "$ref": "#/components/schemas/OpaqueId"
+          },
+          "chainId": {
+            "$ref": "#/components/schemas/ChainIdString"
+          },
+          "account": {
+            "$ref": "#/components/schemas/NonzeroAddress"
+          },
+          "signatureScheme": {
+            "type": "string",
+            "const": "root-eip191-65"
+          },
+          "domain": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 253,
+            "description": "服务端固定SIWE域及可选端口，客户端不可任意指定。"
+          },
+          "uri": {
+            "$ref": "#/components/schemas/HttpsUri"
+          },
+          "nonce": {
+            "type": "string",
+            "minLength": 16,
+            "maxLength": 64,
+            "description": "服务端CSPRNG至少16字母数字。",
+            "pattern": "^[A-Za-z0-9]{16,64}$(?![\\s\\S])"
+          },
+          "issuedAt": {
+            "$ref": "#/components/schemas/TimestampSeconds"
+          },
+          "expiresAt": {
+            "$ref": "#/components/schemas/TimestampSeconds"
+          },
+          "message": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 4096,
+            "description": "服务端保存的确切SIWE原文；签署UTF8原文EIP191，不做typed-message/1271封装。"
+          }
+        },
+        "required": [
+          "schemaVersion",
+          "requestId",
+          "challengeId",
+          "projectId",
+          "chainId",
+          "account",
+          "signatureScheme",
+          "domain",
+          "uri",
+          "nonce",
+          "issuedAt",
+          "expiresAt",
+          "message"
+        ],
+        "x-semanticConstraints": [
+          "message符合SIWE且address文本为校验和形式；issuedAt/expirationTime RFC3339与秒字段精确对应。",
+          "expiresAt-issuedAt<=300且serverNow<expiresAt；domain/uri/chain/account/version均核对服务配置及记录。"
+        ]
+      },
+      "AuthSessionRequest": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "schemaVersion": {
+            "$ref": "#/components/schemas/SchemaVersion"
+          },
+          "idempotencyKey": {
+            "$ref": "#/components/schemas/IdempotencyKey"
+          },
+          "challengeId": {
+            "$ref": "#/components/schemas/OpaqueId"
+          },
+          "signatureScheme": {
+            "type": "string",
+            "const": "root-eip191-65"
+          },
+          "signature": {
+            "$ref": "#/components/schemas/Signature65"
+          }
+        },
+        "required": [
+          "schemaVersion",
+          "idempotencyKey",
+          "challengeId",
+          "signatureScheme",
+          "signature"
+        ],
+        "x-semanticConstraints": [
+          "验证保存的原始SIWE EIP191摘要，直接recover根A；不因有委托代码而自动改走ERC1271。",
+          "challenge原子消费；同键同请求恢复原会话，换键消费同挑战拒绝。"
+        ]
+      },
+      "AuthSessionResponse": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "schemaVersion": {
+            "$ref": "#/components/schemas/SchemaVersion"
+          },
+          "requestId": {
+            "$ref": "#/components/schemas/OpaqueId"
+          },
+          "sessionId": {
+            "$ref": "#/components/schemas/OpaqueId"
+          },
+          "projectId": {
+            "$ref": "#/components/schemas/OpaqueId"
+          },
+          "chainId": {
+            "$ref": "#/components/schemas/ChainIdString"
+          },
+          "account": {
+            "$ref": "#/components/schemas/NonzeroAddress"
+          },
+          "tokenType": {
+            "type": "string",
+            "const": "Bearer"
+          },
+          "accessToken": {
+            "type": "string",
+            "minLength": 32,
+            "maxLength": 512,
+            "description": "仅返回客户端内存；不写URL/持久化浏览器存储/日志。",
+            "pattern": "^[A-Za-z0-9_-]{32,512}$(?![\\s\\S])"
+          },
+          "issuedAt": {
+            "$ref": "#/components/schemas/TimestampSeconds"
+          },
+          "expiresAt": {
+            "$ref": "#/components/schemas/TimestampSeconds"
+          },
+          "scopes": {
+            "type": "array",
+            "items": {
+              "type": "string",
+              "enum": [
+                "sponsorship",
+                "delegation_relay",
+                "operation_registration",
+                "budget_read"
+              ]
+            },
+            "uniqueItems": true,
+            "minItems": 1,
+            "maxItems": 4
+          }
+        },
+        "required": [
+          "schemaVersion",
+          "requestId",
+          "sessionId",
+          "projectId",
+          "chainId",
+          "account",
+          "tokenType",
+          "accessToken",
+          "issuedAt",
+          "expiresAt",
+          "scopes"
+        ],
+        "x-semanticConstraints": [
+          "expiresAt-issuedAt<=300；scope由服务资格策略授予，不由请求body决定。",
+          "同挑战同键恢复同一逻辑token只在原有效期内；过期不得续发新会话。"
+        ]
+      },
+      "NativeCurrency": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "symbol": {
+            "type": "string",
+            "enum": [
+              "BNB",
+              "ETH"
+            ]
+          },
+          "decimals": {
+            "type": "string",
+            "const": "18"
+          }
+        },
+        "required": [
+          "symbol",
+          "decimals"
+        ]
+      },
+      "Deployment": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "version": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 128,
+            "description": "锁定部署的协议/构建版本；draft可为明确的候选版本标识。"
+          },
+          "address": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/NonzeroAddress"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "runtimeCodeHash": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/Bytes32"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "verified": {
+            "type": "boolean"
+          }
+        },
+        "required": [
+          "version",
+          "address",
+          "runtimeCodeHash",
+          "verified"
+        ],
+        "x-semanticConstraints": [
+          "verified=true必须同时存在实际address/runtimeCodeHash及验收证据；未部署两者null且verified=false。"
+        ]
+      },
+      "RpcEndpoint": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "id": {
+            "$ref": "#/components/schemas/OpaqueId"
+          },
+          "url": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/HttpsUri"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "verified": {
+            "type": "boolean"
+          }
+        },
+        "required": [
+          "id",
+          "url",
+          "verified"
+        ],
+        "x-semanticConstraints": [
+          "url不包含秘密凭证；verified=true要求真实可用URL与兼容验收。"
+        ]
+      },
+      "BundlerEndpoint": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "id": {
+            "$ref": "#/components/schemas/OpaqueId"
+          },
+          "url": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/HttpsUri"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "verified": {
+            "type": "boolean"
+          },
+          "supportedEntryPointVersions": {
+            "type": "array",
+            "items": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 128
+            },
+            "maxItems": 16,
+            "uniqueItems": true
+          }
+        },
+        "required": [
+          "id",
+          "url",
+          "verified",
+          "supportedEntryPointVersions"
+        ],
+        "x-semanticConstraints": [
+          "未验收candidate不得verified=true；验收版本/实际EP在清单记录中能追溯。"
+        ]
+      },
+      "FeeComponent": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "name": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 64,
+            "description": "例如execution/l1-data/operator/authorization，准确费项由F03冻结。"
+          },
+          "source": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 512,
+            "description": "估值来源和已包含规则，不能将尚未验证标为已包含。"
+          },
+          "includedInEstimate": {
+            "type": "boolean"
+          }
+        },
+        "required": [
+          "name",
+          "source",
+          "includedInEstimate"
+        ]
+      },
+      "FeeModel": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "policyId": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/PolicyId"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "status": {
+            "type": "string",
+            "enum": [
+              "draft",
+              "frozen"
+            ]
+          },
+          "nativeCostUnit": {
+            "type": "string",
+            "const": "wei"
+          },
+          "components": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/FeeComponent"
+            },
+            "minItems": 0,
+            "maxItems": 32
+          }
+        },
+        "required": [
+          "policyId",
+          "status",
+          "nativeCostUnit",
+          "components"
+        ],
+        "x-semanticConstraints": [
+          "费用差额归属及各上游已包含项目按F03/F05固定；不得重复加价。"
+        ]
+      },
+      "ConfirmationPolicy": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "policyId": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/PolicyId"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "status": {
+            "type": "string",
+            "enum": [
+              "draft",
+              "frozen"
+            ]
+          },
+          "description": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 4096,
+            "description": "逐链定义规范链、pending/confirmed/finalized、排序器/L1最终确认及重组例外。"
+          },
+          "requiredConfirmations": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/UInt256String"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          }
+        },
+        "required": [
+          "policyId",
+          "status",
+          "description",
+          "requiredConfirmations"
+        ],
+        "x-semanticConstraints": [
+          "仅requiredConfirmations数字不能替代该链最终确认规则；未冻结配置不得假称真实验收。"
+        ]
+      },
+      "RelayCapability": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "mode": {
+            "type": "string",
+            "enum": [
+              "not_frozen",
+              "backend_relayer",
+              "wallet_native"
+            ]
+          },
+          "supported": {
+            "type": "boolean"
+          },
+          "verified": {
+            "type": "boolean"
+          },
+          "maxNativeCost": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/UInt256String"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          }
+        },
+        "required": [
+          "mode",
+          "supported",
+          "verified",
+          "maxNativeCost"
+        ],
+        "x-semanticConstraints": [
+          "verified需真实传输验收；not_frozen时supported=false、verified=false。"
+        ]
+      },
+      "ChainManifest": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "schemaVersion": {
+            "$ref": "#/components/schemas/SchemaVersion"
+          },
+          "manifestVersion": {
+            "$ref": "#/components/schemas/ManifestVersion"
+          },
+          "chainId": {
+            "$ref": "#/components/schemas/ChainIdString"
+          },
+          "name": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 128
+          },
+          "nativeCurrency": {
+            "$ref": "#/components/schemas/NativeCurrency"
+          },
+          "capabilityStatus": {
+            "type": "string",
+            "enum": [
+              "unverified",
+              "verified",
+              "unsupported"
+            ]
+          },
+          "entryPoint": {
+            "$ref": "#/components/schemas/Deployment"
+          },
+          "delegate": {
+            "$ref": "#/components/schemas/Deployment"
+          },
+          "paymaster": {
+            "$ref": "#/components/schemas/Deployment"
+          },
+          "rpcEndpoints": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/RpcEndpoint"
+            },
+            "minItems": 0,
+            "maxItems": 16
+          },
+          "bundlerEndpoints": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/BundlerEndpoint"
+            },
+            "minItems": 0,
+            "maxItems": 16
+          },
+          "feeModel": {
+            "$ref": "#/components/schemas/FeeModel"
+          },
+          "confirmationPolicy": {
+            "$ref": "#/components/schemas/ConfirmationPolicy"
+          },
+          "relay": {
+            "$ref": "#/components/schemas/RelayCapability"
+          }
+        },
+        "required": [
+          "schemaVersion",
+          "manifestVersion",
+          "chainId",
+          "name",
+          "nativeCurrency",
+          "capabilityStatus",
+          "entryPoint",
+          "delegate",
+          "paymaster",
+          "rpcEndpoints",
+          "bundlerEndpoints",
+          "feeModel",
+          "confirmationPolicy",
+          "relay"
+        ],
+        "x-semanticConstraints": [
+          "chainId在首期四链及其配置测试网范围内；BSC币种BNB，其余三链各自ETH。",
+          "候选null地址/URL不是可用生产配置；SDK仍须核对实际链和代码。",
+          "每链交付至少两个已经兼容验收的Bundler；draft允许未达到但不可标完成。"
+        ]
+      },
+      "ChainsResponse": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "schemaVersion": {
+            "$ref": "#/components/schemas/SchemaVersion"
+          },
+          "requestId": {
+            "$ref": "#/components/schemas/OpaqueId"
+          },
+          "serverTime": {
+            "$ref": "#/components/schemas/TimestampSeconds"
+          },
+          "chains": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/ChainManifest"
+            },
+            "minItems": 0,
+            "maxItems": 32
+          }
+        },
+        "required": [
+          "schemaVersion",
+          "requestId",
+          "serverTime",
+          "chains"
+        ]
+      },
+      "SponsorshipPrepareRequest": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "schemaVersion": {
+            "$ref": "#/components/schemas/SchemaVersion"
+          },
+          "idempotencyKey": {
+            "$ref": "#/components/schemas/IdempotencyKey"
+          },
+          "manifestVersion": {
+            "$ref": "#/components/schemas/ManifestVersion"
+          },
+          "chainId": {
+            "$ref": "#/components/schemas/ChainIdString"
+          },
+          "entryPoint": {
+            "$ref": "#/components/schemas/NonzeroAddress"
+          },
+          "account": {
+            "$ref": "#/components/schemas/NonzeroAddress"
+          },
+          "expectedDelegate": {
+            "$ref": "#/components/schemas/NonzeroAddress"
+          },
+          "unsignedUserOperation": {
+            "$ref": "#/components/schemas/UnsignedSponsoredUserOperation"
+          },
+          "authorizationContext": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/AuthorizationContext"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "accountWindow": {
+            "$ref": "#/components/schemas/AccountWindow"
+          },
+          "maxCost": {
+            "$ref": "#/components/schemas/UInt256String"
+          }
+        },
+        "required": [
+          "schemaVersion",
+          "idempotencyKey",
+          "manifestVersion",
+          "chainId",
+          "entryPoint",
+          "account",
+          "expectedDelegate",
+          "unsignedUserOperation",
+          "authorizationContext",
+          "accountWindow",
+          "maxCost"
+        ],
+        "x-semanticConstraints": [
+          "会话account/chain与顶层相同，sender也相同；项目从服务身份得出，不接受body额度主体。",
+          "expectedDelegate/EP/PM与manifest匹配；首次context可未签但不是已授权证明；已有签名严格验证。",
+          "accountWindow等于拟签Permit窗口；requiredCost<=maxCost，预留额由服务重算。"
+        ]
+      },
+      "SponsorshipPrepareResponse": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "schemaVersion": {
+            "$ref": "#/components/schemas/SchemaVersion"
+          },
+          "requestId": {
+            "$ref": "#/components/schemas/OpaqueId"
+          },
+          "quoteId": {
+            "$ref": "#/components/schemas/OpaqueId"
+          },
+          "chainId": {
+            "$ref": "#/components/schemas/ChainIdString"
+          },
+          "account": {
+            "$ref": "#/components/schemas/NonzeroAddress"
+          },
+          "manifestVersion": {
+            "$ref": "#/components/schemas/ManifestVersion"
+          },
+          "serverTime": {
+            "$ref": "#/components/schemas/TimestampSeconds"
+          },
+          "quoteExpiresAt": {
+            "$ref": "#/components/schemas/TimestampSeconds"
+          },
+          "maxCost": {
+            "$ref": "#/components/schemas/UInt256String"
+          },
+          "reservationAmountNative": {
+            "$ref": "#/components/schemas/UInt256String"
+          },
+          "costPolicyId": {
+            "$ref": "#/components/schemas/PolicyId"
+          },
+          "paymaster": {
+            "$ref": "#/components/schemas/NonzeroAddress"
+          },
+          "paymasterVerificationGasLimit": {
+            "$ref": "#/components/schemas/EntryPointGasValue"
+          },
+          "paymasterPostOpGasLimit": {
+            "$ref": "#/components/schemas/EntryPointGasValue"
+          },
+          "stubPaymasterData": {
+            "$ref": "#/components/schemas/PaymasterData352"
+          },
+          "stubIsExecutable": {
+            "type": "boolean",
+            "const": false
+          }
+        },
+        "required": [
+          "schemaVersion",
+          "requestId",
+          "quoteId",
+          "chainId",
+          "account",
+          "manifestVersion",
+          "serverTime",
+          "quoteExpiresAt",
+          "maxCost",
+          "reservationAmountNative",
+          "costPolicyId",
+          "paymaster",
+          "paymasterVerificationGasLimit",
+          "paymasterPostOpGasLimit",
+          "stubPaymasterData",
+          "stubIsExecutable"
+        ],
+        "description": "准备不占预算，stub不能通过真实PM许可验证；响应不是可用许可。",
+        "x-semanticConstraints": [
+          "serverTime>=quoteExpiresAt时不允许创建新许可；时间与链上window分开。",
+          "响应gas/费用若与候选操作不同，SDK用新值重估/重新prepare，不能静默修改冻结create载荷。"
+        ]
+      },
+      "SponsorshipCreateRequest": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "schemaVersion": {
+            "$ref": "#/components/schemas/SchemaVersion"
+          },
+          "idempotencyKey": {
+            "$ref": "#/components/schemas/IdempotencyKey"
+          },
+          "manifestVersion": {
+            "$ref": "#/components/schemas/ManifestVersion"
+          },
+          "chainId": {
+            "$ref": "#/components/schemas/ChainIdString"
+          },
+          "entryPoint": {
+            "$ref": "#/components/schemas/NonzeroAddress"
+          },
+          "account": {
+            "$ref": "#/components/schemas/NonzeroAddress"
+          },
+          "expectedDelegate": {
+            "$ref": "#/components/schemas/NonzeroAddress"
+          },
+          "unsignedUserOperation": {
+            "$ref": "#/components/schemas/UnsignedSponsoredUserOperation"
+          },
+          "authorizationContext": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/AuthorizationContext"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "accountWindow": {
+            "$ref": "#/components/schemas/AccountWindow"
+          },
+          "maxCost": {
+            "$ref": "#/components/schemas/UInt256String"
+          },
+          "quoteId": {
+            "$ref": "#/components/schemas/OpaqueId"
+          }
+        },
+        "required": [
+          "schemaVersion",
+          "idempotencyKey",
+          "manifestVersion",
+          "chainId",
+          "entryPoint",
+          "account",
+          "expectedDelegate",
+          "unsignedUserOperation",
+          "authorizationContext",
+          "accountWindow",
+          "maxCost",
+          "quoteId"
+        ],
+        "x-semanticConstraints": [
+          "会话account/chain与顶层相同，sender也相同；项目从服务身份得出，不接受body额度主体。",
+          "expectedDelegate/EP/PM与manifest匹配；首次context可未签但不是已授权证明；已有签名严格验证。",
+          "accountWindow等于拟签Permit窗口；requiredCost<=maxCost，预留额由服务重算。",
+          "quote归属、语义字段与当前版本均匹配，serverNow<quoteExpiresAt。",
+          "先事务预留并commit，再签发；无成功预留不能得到可执行许可。"
+        ]
+      },
+      "SponsorshipPermit": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "permitVersion": {
+            "type": "string",
+            "const": "1"
+          },
+          "chainId": {
+            "$ref": "#/components/schemas/ChainIdString"
+          },
+          "entryPoint": {
+            "$ref": "#/components/schemas/NonzeroAddress"
+          },
+          "sender": {
+            "$ref": "#/components/schemas/NonzeroAddress"
+          },
+          "expectedDelegate": {
+            "$ref": "#/components/schemas/NonzeroAddress"
+          },
+          "nonce": {
+            "$ref": "#/components/schemas/UInt256String"
+          },
+          "accountWindow": {
+            "$ref": "#/components/schemas/AccountWindow"
+          },
+          "maxCost": {
+            "$ref": "#/components/schemas/UInt256String"
+          },
+          "chainReservationId": {
+            "$ref": "#/components/schemas/NonzeroBytes32"
+          },
+          "paymaster": {
+            "$ref": "#/components/schemas/NonzeroAddress"
+          },
+          "paymasterVerificationGasLimit": {
+            "$ref": "#/components/schemas/EntryPointGasValue"
+          },
+          "paymasterPostOpGasLimit": {
+            "$ref": "#/components/schemas/EntryPointGasValue"
+          },
+          "paymasterData": {
+            "$ref": "#/components/schemas/PaymasterData352"
+          },
+          "permitDigest": {
+            "$ref": "#/components/schemas/Bytes32"
+          },
+          "sponsorSignature": {
+            "$ref": "#/components/schemas/Signature65"
+          }
+        },
+        "required": [
+          "permitVersion",
+          "chainId",
+          "entryPoint",
+          "sender",
+          "expectedDelegate",
+          "nonce",
+          "accountWindow",
+          "maxCost",
+          "chainReservationId",
+          "paymaster",
+          "paymasterVerificationGasLimit",
+          "paymasterPostOpGasLimit",
+          "paymasterData",
+          "permitDigest",
+          "sponsorSignature"
+        ],
+        "x-semanticConstraints": [
+          "EIP712类型/域及字段以SIGNATURE_FORMATS为准；Digest不是请求fingerprint。",
+          "chainReservationId对应ABI字段reservationId；(chain,PM,id)唯一。",
+          "paymasterData解码必须与展示字段及完整冻结操作一致；账户最终hash包含完整PM签名。"
+        ]
+      },
+      "ReservationAccounting": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "state": {
+            "type": "string",
+            "enum": [
+              "reserved",
+              "pending",
+              "settled",
+              "released",
+              "reconciliation_required"
+            ]
+          },
+          "reservationAmountNative": {
+            "$ref": "#/components/schemas/UInt256String"
+          },
+          "settledNative": {
+            "$ref": "#/components/schemas/UInt256String"
+          },
+          "pendingNative": {
+            "$ref": "#/components/schemas/UInt256String"
+          },
+          "reservedRiskNative": {
+            "$ref": "#/components/schemas/UInt256String"
+          },
+          "releasedNative": {
+            "$ref": "#/components/schemas/UInt256String"
+          },
+          "costPolicyId": {
+            "$ref": "#/components/schemas/PolicyId"
+          }
+        },
+        "required": [
+          "state",
+          "reservationAmountNative",
+          "settledNative",
+          "pendingNative",
+          "reservedRiskNative",
+          "releasedNative",
+          "costPolicyId"
+        ],
+        "x-semanticConstraints": [
+          "正常状态各占用互斥；reservationAmountNative=settledNative+pendingNative+reservedRiskNative+releasedNative。",
+          "费用未知、上限矛盾或重组冲突时不当零释放；转reconciliation_required。"
+        ]
+      },
+      "ChainObservation": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "blockNumber": {
+            "$ref": "#/components/schemas/UInt256String"
+          },
+          "blockHash": {
+            "$ref": "#/components/schemas/Bytes32"
+          },
+          "blockTimestamp": {
+            "$ref": "#/components/schemas/TimestampSeconds"
+          },
+          "observedAt": {
+            "$ref": "#/components/schemas/TimestampSeconds"
+          }
+        },
+        "required": [
+          "blockNumber",
+          "blockHash",
+          "blockTimestamp",
+          "observedAt"
+        ]
+      },
+      "Evidence": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "kind": {
+            "type": "string",
+            "enum": [
+              "user_operation_event",
+              "outer_receipt",
+              "code_readback",
+              "nonce_readback",
+              "bundler_response"
+            ]
+          },
+          "sourceId": {
+            "$ref": "#/components/schemas/OpaqueId"
+          },
+          "verified": {
+            "type": "boolean"
+          },
+          "blockNumber": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/UInt256String"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "blockHash": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/Bytes32"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "transactionHash": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/Bytes32"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "logIndex": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/UInt256String"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "observedAt": {
+            "$ref": "#/components/schemas/TimestampSeconds"
+          }
+        },
+        "required": [
+          "kind",
+          "sourceId",
+          "verified",
+          "blockNumber",
+          "blockHash",
+          "transactionHash",
+          "logIndex",
+          "observedAt"
+        ],
+        "x-semanticConstraints": [
+          "客户端自报hash不生成verified=true证据；无充分关联证据不得设置执行成功。"
+        ]
+      },
+      "SponsorshipRecord": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "schemaVersion": {
+            "$ref": "#/components/schemas/SchemaVersion"
+          },
+          "requestId": {
+            "$ref": "#/components/schemas/OpaqueId"
+          },
+          "sponsorshipId": {
+            "$ref": "#/components/schemas/OpaqueId"
+          },
+          "reservationId": {
+            "$ref": "#/components/schemas/OpaqueId"
+          },
+          "chainReservationId": {
+            "$ref": "#/components/schemas/NonzeroBytes32"
+          },
+          "quoteId": {
+            "$ref": "#/components/schemas/OpaqueId"
+          },
+          "manifestVersion": {
+            "$ref": "#/components/schemas/ManifestVersion"
+          },
+          "chainId": {
+            "$ref": "#/components/schemas/ChainIdString"
+          },
+          "entryPoint": {
+            "$ref": "#/components/schemas/NonzeroAddress"
+          },
+          "account": {
+            "$ref": "#/components/schemas/NonzeroAddress"
+          },
+          "expectedDelegate": {
+            "$ref": "#/components/schemas/NonzeroAddress"
+          },
+          "requestFingerprint": {
+            "$ref": "#/components/schemas/Bytes32"
+          },
+          "state": {
+            "type": "string",
+            "enum": [
+              "reserved",
+              "signing",
+              "signing_unknown",
+              "issued",
+              "settled",
+              "released",
+              "reconciliation_required"
+            ]
+          },
+          "quoteState": {
+            "type": "string",
+            "enum": [
+              "active",
+              "expired"
+            ]
+          },
+          "permitValidity": {
+            "type": "string",
+            "enum": [
+              "unknown",
+              "not_yet_valid",
+              "valid",
+              "expired"
+            ]
+          },
+          "quoteExpiresAt": {
+            "$ref": "#/components/schemas/TimestampSeconds"
+          },
+          "serverTime": {
+            "$ref": "#/components/schemas/TimestampSeconds"
+          },
+          "accountWindow": {
+            "$ref": "#/components/schemas/AccountWindow"
+          },
+          "permit": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/SponsorshipPermit"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "accounting": {
+            "$ref": "#/components/schemas/ReservationAccounting"
+          },
+          "chainObservation": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/ChainObservation"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "evidence": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/Evidence"
+            },
+            "minItems": 0,
+            "maxItems": 256
+          }
+        },
+        "required": [
+          "schemaVersion",
+          "requestId",
+          "sponsorshipId",
+          "reservationId",
+          "chainReservationId",
+          "quoteId",
+          "manifestVersion",
+          "chainId",
+          "entryPoint",
+          "account",
+          "expectedDelegate",
+          "requestFingerprint",
+          "state",
+          "quoteState",
+          "permitValidity",
+          "quoteExpiresAt",
+          "serverTime",
+          "accountWindow",
+          "permit",
+          "accounting",
+          "chainObservation",
+          "evidence"
+        ],
+        "x-semanticConstraints": [
+          "state=issued时permit必须非null；reserved/signing/signing_unknown无已持久化可用许可时permit=null。",
+          "permitValidity依据已观察链timestamp而非报价/server时间；permit存在不等于已授权/已提交/已执行。",
+          "签发结果不确定仍保留预算风险；quote过期/会话过期/客户端取消不释放。"
+        ]
+      },
+      "BudgetSnapshot": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "chainId": {
+            "$ref": "#/components/schemas/ChainIdString"
+          },
+          "scope": {
+            "type": "string",
+            "enum": [
+              "account",
+              "project_chain"
+            ]
+          },
+          "projectId": {
+            "$ref": "#/components/schemas/OpaqueId"
+          },
+          "account": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/NonzeroAddress"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "period": {
+            "$ref": "#/components/schemas/PeriodId"
+          },
+          "currency": {
+            "$ref": "#/components/schemas/NativeCurrency"
+          },
+          "totalNative": {
+            "$ref": "#/components/schemas/UInt256String"
+          },
+          "settledNative": {
+            "$ref": "#/components/schemas/UInt256String"
+          },
+          "pendingNative": {
+            "$ref": "#/components/schemas/UInt256String"
+          },
+          "reservedRiskNative": {
+            "$ref": "#/components/schemas/UInt256String"
+          },
+          "availableNative": {
+            "$ref": "#/components/schemas/UInt256String"
+          }
+        },
+        "required": [
+          "chainId",
+          "scope",
+          "projectId",
+          "account",
+          "period",
+          "currency",
+          "totalNative",
+          "settledNative",
+          "pendingNative",
+          "reservedRiskNative",
+          "availableNative"
+        ],
+        "x-semanticConstraints": [
+          "availableNative=totalNative-settledNative-pendingNative-reservedRiskNative，各项非负且互斥。",
+          "scope=account时account必须会话account；project_chain时account=null。",
+          "两scope是相同承诺的不同约束视图，不能相加；跨链币种不能混账。"
+        ],
+        "examples": [
+          {
+            "chainId": "56",
+            "scope": "account",
+            "projectId": "example_project_0001",
+            "account": "0x1111111111111111111111111111111111111111",
+            "period": "example-period",
+            "currency": {
+              "symbol": "BNB",
+              "decimals": "18"
+            },
+            "totalNative": "100",
+            "settledNative": "0",
+            "pendingNative": "0",
+            "reservedRiskNative": "40",
+            "availableNative": "60"
+          }
+        ]
+      },
+      "BudgetsResponse": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "schemaVersion": {
+            "$ref": "#/components/schemas/SchemaVersion"
+          },
+          "requestId": {
+            "$ref": "#/components/schemas/OpaqueId"
+          },
+          "snapshotVersion": {
+            "$ref": "#/components/schemas/OpaqueId"
+          },
+          "serverTime": {
+            "$ref": "#/components/schemas/TimestampSeconds"
+          },
+          "accountBudget": {
+            "$ref": "#/components/schemas/BudgetSnapshot"
+          },
+          "chainBudget": {
+            "$ref": "#/components/schemas/BudgetSnapshot"
+          }
+        },
+        "required": [
+          "schemaVersion",
+          "requestId",
+          "snapshotVersion",
+          "serverTime",
+          "accountBudget",
+          "chainBudget"
+        ],
+        "x-semanticConstraints": [
+          "两snapshot在同一数据库一致性视图且chain/period相同。",
+          "客户端不能借period选择绕过当前额度；跨周期风险策略未冻结不得签跨周期许可。"
+        ]
+      },
+      "SubmissionState": {
+        "type": "string",
+        "enum": [
+          "unknown",
+          "not_submitted",
+          "accepted",
+          "rejected"
+        ]
+      },
+      "ExecutionState": {
+        "type": "string",
+        "enum": [
+          "unknown",
+          "not_executed",
+          "succeeded",
+          "reverted"
+        ]
+      },
+      "ConfirmationState": {
+        "type": "string",
+        "enum": [
+          "unknown",
+          "pending",
+          "confirmed",
+          "finalized",
+          "reorged"
+        ]
+      },
+      "DelegationState": {
+        "type": "string",
+        "enum": [
+          "unknown",
+          "undelegated",
+          "expected_delegate",
+          "other_delegate"
+        ]
+      },
+      "OperationAttempt": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "attemptId": {
+            "$ref": "#/components/schemas/OpaqueId"
+          },
+          "bundlerId": {
+            "$ref": "#/components/schemas/OpaqueId"
+          },
+          "attemptedAt": {
+            "$ref": "#/components/schemas/TimestampSeconds"
+          },
+          "reportedResult": {
+            "type": "string",
+            "enum": [
+              "not_sent",
+              "accepted",
+              "rejected",
+              "timeout",
+              "unknown"
+            ]
+          },
+          "reportedTransactionHash": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/Bytes32"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          }
+        },
+        "required": [
+          "attemptId",
+          "bundlerId",
+          "attemptedAt",
+          "reportedResult",
+          "reportedTransactionHash"
+        ],
+        "description": "全部为客户端声明；不能据其提升可信submission/execution状态。"
+      },
+      "OperationRegisterRequest": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "schemaVersion": {
+            "$ref": "#/components/schemas/SchemaVersion"
+          },
+          "idempotencyKey": {
+            "$ref": "#/components/schemas/IdempotencyKey"
+          },
+          "manifestVersion": {
+            "$ref": "#/components/schemas/ManifestVersion"
+          },
+          "chainId": {
+            "$ref": "#/components/schemas/ChainIdString"
+          },
+          "entryPoint": {
+            "$ref": "#/components/schemas/NonzeroAddress"
+          },
+          "account": {
+            "$ref": "#/components/schemas/NonzeroAddress"
+          },
+          "userOpHash": {
+            "$ref": "#/components/schemas/Bytes32"
+          },
+          "nonce": {
+            "$ref": "#/components/schemas/UInt256String"
+          },
+          "expectedDelegate": {
+            "$ref": "#/components/schemas/NonzeroAddress"
+          },
+          "reportedTransactionHash": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/Bytes32"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "attempts": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/OperationAttempt"
+            },
+            "minItems": 0,
+            "maxItems": 64
+          }
+        },
+        "required": [
+          "schemaVersion",
+          "idempotencyKey",
+          "manifestVersion",
+          "chainId",
+          "entryPoint",
+          "account",
+          "userOpHash",
+          "nonce",
+          "expectedDelegate",
+          "reportedTransactionHash",
+          "attempts"
+        ],
+        "x-semanticConstraints": [
+          "会话账户/链一致；传入hash只是待核实线索，不接受客户端状态写为已受理/已执行/已确认。",
+          "此端点不广播；同一业务广播不能依赖本索引登记成功。"
+        ]
+      },
+      "FeeObservation": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "payerType": {
+            "type": "string",
+            "enum": [
+              "account",
+              "paymaster",
+              "relayer",
+              "unknown"
+            ]
+          },
+          "payerAddress": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/Address"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "currency": {
+            "$ref": "#/components/schemas/NativeCurrency"
+          },
+          "entryPointCostNative": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/UInt256String"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "outerTransactionCostNative": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/UInt256String"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "budgetCostNative": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/UInt256String"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "costPolicyId": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/PolicyId"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "transactionHash": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/Bytes32"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "confirmationState": {
+            "$ref": "#/components/schemas/ConfirmationState"
+          }
+        },
+        "required": [
+          "payerType",
+          "payerAddress",
+          "currency",
+          "entryPointCostNative",
+          "outerTransactionCostNative",
+          "budgetCostNative",
+          "costPolicyId",
+          "transactionHash",
+          "confirmationState"
+        ],
+        "x-semanticConstraints": [
+          "未知金额使用null而不是0；EP结算、外层成本和预算口径不同，不互相冒充。"
+        ]
+      },
+      "OperationRecord": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "schemaVersion": {
+            "$ref": "#/components/schemas/SchemaVersion"
+          },
+          "requestId": {
+            "$ref": "#/components/schemas/OpaqueId"
+          },
+          "chainId": {
+            "$ref": "#/components/schemas/ChainIdString"
+          },
+          "entryPoint": {
+            "$ref": "#/components/schemas/NonzeroAddress"
+          },
+          "userOpHash": {
+            "$ref": "#/components/schemas/Bytes32"
+          },
+          "sender": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/NonzeroAddress"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "nonce": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/UInt256String"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "submissionState": {
+            "$ref": "#/components/schemas/SubmissionState"
+          },
+          "executionState": {
+            "$ref": "#/components/schemas/ExecutionState"
+          },
+          "confirmationState": {
+            "$ref": "#/components/schemas/ConfirmationState"
+          },
+          "delegationState": {
+            "$ref": "#/components/schemas/DelegationState"
+          },
+          "transactionHashes": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/Bytes32"
+            },
+            "minItems": 0,
+            "maxItems": 64
+          },
+          "fee": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/FeeObservation"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "chainObservation": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/ChainObservation"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "indexedBlockNumber": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/UInt256String"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "evidence": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/Evidence"
+            },
+            "minItems": 0,
+            "maxItems": 256
+          },
+          "updatedAt": {
+            "$ref": "#/components/schemas/TimestampSeconds"
+          },
+          "manifestVersion": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/ManifestVersion"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "与已核验操作关联的历史配置版本；不是当前清单默认值或未经核验clientClaim，不能确定为null。"
+          },
+          "expectedDelegate": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/NonzeroAddress"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "该历史操作可核验关联的预期D；无法关联为null，不能从marker或最新清单猜测。"
+          },
+          "observedDelegate": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/Address"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "delegationObservation块实际读取的当前委托；零地址表示已确认无委托，null表示未知。"
+          },
+          "observedAccountNonce": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/UInt256String"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "delegationObservation块实际读取的EOA nonce，不是EntryPoint nonce。"
+          },
+          "delegationObservation": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/ChainObservation"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "独立代码/EOA nonce读回的观测；不冒用操作收录块或索引游标。"
+          }
+        },
+        "required": [
+          "schemaVersion",
+          "requestId",
+          "chainId",
+          "entryPoint",
+          "userOpHash",
+          "sender",
+          "nonce",
+          "submissionState",
+          "executionState",
+          "confirmationState",
+          "delegationState",
+          "transactionHashes",
+          "fee",
+          "chainObservation",
+          "indexedBlockNumber",
+          "evidence",
+          "updatedAt",
+          "manifestVersion",
+          "expectedDelegate",
+          "observedDelegate",
+          "observedAccountNonce",
+          "delegationObservation"
+        ],
+        "x-semanticConstraints": [
+          "sender/nonce等确定性字段须有核验来源；客户端声明只存在私有线索表，不作为公开verified事实。",
+          "格式合法但未知三元组返回200 unknown，sender/nonce/fee/observation可null、txHashes/evidence为空。",
+          "accepted必须可信Bundler响应；执行/确认须链证据；代码readback决定delegationState。",
+          "整个bundle回滚可能无UserOpEvent；仅nonce前进不足以认定此hash执行；缺证据保持unknown。",
+          "实际重组撤回confirmation及费用，不能错误保留finalized。",
+          "manifestVersion/expectedDelegate必须来自能与已核验操作关联的历史配置与可信准备/许可/操作数据；需核对完整op/hash及D绑定，不信任client_claim，也不默认最新manifest。",
+          "delegationState比较delegationObservation下当前代码与本操作可核验的expectedDelegate；目标来源或代码未知时保持unknown；只有已确认空代码可独立为undelegated。",
+          "未知hash的manifestVersion/expectedDelegate/observedDelegate/observedAccountNonce/delegationObservation均为null；收录/执行证据与独立委托readback块分开。"
+        ]
+      },
+      "DelegationRelayRequest": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "schemaVersion": {
+            "$ref": "#/components/schemas/SchemaVersion"
+          },
+          "idempotencyKey": {
+            "$ref": "#/components/schemas/IdempotencyKey"
+          },
+          "manifestVersion": {
+            "$ref": "#/components/schemas/ManifestVersion"
+          },
+          "chainId": {
+            "$ref": "#/components/schemas/ChainIdString"
+          },
+          "account": {
+            "$ref": "#/components/schemas/NonzeroAddress"
+          },
+          "action": {
+            "type": "string",
+            "enum": [
+              "revoke",
+              "delegate"
+            ]
+          },
+          "expectedDelegate": {
+            "$ref": "#/components/schemas/Address"
+          },
+          "authorization": {
+            "$ref": "#/components/schemas/Eip7702Authorization"
+          },
+          "maxRelayCostNative": {
+            "$ref": "#/components/schemas/UInt256String"
+          }
+        },
+        "required": [
+          "schemaVersion",
+          "idempotencyKey",
+          "manifestVersion",
+          "chainId",
+          "account",
+          "action",
+          "expectedDelegate",
+          "authorization",
+          "maxRelayCostNative"
+        ],
+        "x-semanticConstraints": [
+          "会话具有delegation_relay资格、account/chain匹配；recover authorization=account。",
+          "revoke的D和auth.address均zero；delegate的D和auth.address为清单核验非零D；tuple链相等。",
+          "端点固定R!=A路径，授权nonce=A当前nonce；不接任意to/value/data。",
+          "单次/用户/链Relayer预算与用户maxRelayCostNative同时约束。",
+          "按(chain,recoveredA,authorizationDigest)独立去重；同A同authnonce冲突意图拒绝。",
+          "事务原子保存待发记录/Relayer nonce/出资预留；先持久化signed外层tx再广播。"
+        ]
+      },
+      "RelayCost": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "reservedNative": {
+            "$ref": "#/components/schemas/UInt256String"
+          },
+          "actualNative": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/UInt256String"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "maxRelayCostNative": {
+            "$ref": "#/components/schemas/UInt256String"
+          },
+          "currency": {
+            "$ref": "#/components/schemas/NativeCurrency"
+          },
+          "confirmationState": {
+            "$ref": "#/components/schemas/ConfirmationState"
+          }
+        },
+        "required": [
+          "reservedNative",
+          "actualNative",
+          "maxRelayCostNative",
+          "currency",
+          "confirmationState"
+        ],
+        "x-semanticConstraints": [
+          "未知actual=null；费用替换同Relayer nonce，只增加预留差额，不另加一次独立出资。"
+        ]
+      },
+      "DelegationRelayRecord": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "schemaVersion": {
+            "$ref": "#/components/schemas/SchemaVersion"
+          },
+          "requestId": {
+            "$ref": "#/components/schemas/OpaqueId"
+          },
+          "relayId": {
+            "$ref": "#/components/schemas/OpaqueId"
+          },
+          "chainId": {
+            "$ref": "#/components/schemas/ChainIdString"
+          },
+          "account": {
+            "$ref": "#/components/schemas/NonzeroAddress"
+          },
+          "action": {
+            "type": "string",
+            "enum": [
+              "revoke",
+              "delegate"
+            ]
+          },
+          "expectedDelegate": {
+            "$ref": "#/components/schemas/Address"
+          },
+          "authorizationDigest": {
+            "$ref": "#/components/schemas/Bytes32"
+          },
+          "authorizationNonce": {
+            "$ref": "#/components/schemas/AuthorizationNonce"
+          },
+          "relayerAddress": {
+            "$ref": "#/components/schemas/NonzeroAddress"
+          },
+          "relayerNonce": {
+            "$ref": "#/components/schemas/UInt256String"
+          },
+          "broadcastState": {
+            "type": "string",
+            "enum": [
+              "queued",
+              "signed",
+              "broadcast",
+              "unknown",
+              "failed"
+            ]
+          },
+          "authorizationState": {
+            "type": "string",
+            "enum": [
+              "unknown",
+              "applied",
+              "skipped",
+              "conflicted"
+            ]
+          },
+          "confirmationState": {
+            "$ref": "#/components/schemas/ConfirmationState"
+          },
+          "transactionHashes": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/Bytes32"
+            },
+            "minItems": 0,
+            "maxItems": 64
+          },
+          "observedDelegate": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/Address"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "observedAccountNonce": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/UInt256String"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "cost": {
+            "$ref": "#/components/schemas/RelayCost"
+          },
+          "chainObservation": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/ChainObservation"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "evidence": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/Evidence"
+            },
+            "minItems": 0,
+            "maxItems": 256
+          },
+          "createdAt": {
+            "$ref": "#/components/schemas/TimestampSeconds"
+          },
+          "updatedAt": {
+            "$ref": "#/components/schemas/TimestampSeconds"
+          }
+        },
+        "required": [
+          "schemaVersion",
+          "requestId",
+          "relayId",
+          "chainId",
+          "account",
+          "action",
+          "expectedDelegate",
+          "authorizationDigest",
+          "authorizationNonce",
+          "relayerAddress",
+          "relayerNonce",
+          "broadcastState",
+          "authorizationState",
+          "confirmationState",
+          "transactionHashes",
+          "observedDelegate",
+          "observedAccountNonce",
+          "cost",
+          "chainObservation",
+          "evidence",
+          "createdAt",
+          "updatedAt"
+        ],
+        "x-semanticConstraints": [
+          "外层receipt成功不证明授权采用；需要code/nonce及链证据且达到该链确认条件。",
+          "同授权不同idempotencyKey返回同relayId/relayerNonce；同一nonce合法fee replacement保存所有txhash。",
+          "broadcast unknown时不能新分配nonce再出资；会话过期不取消已签authorization。"
+        ]
+      },
+      "UpstreamError": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "source": {
+            "type": "string",
+            "enum": [
+              "rpc",
+              "bundler",
+              "signer",
+              "database",
+              "relayer"
+            ]
+          },
+          "code": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "string",
+                "maxLength": 128
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "message": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "maxLength": 1024
+          },
+          "dataJson": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "maxLength": 8192,
+            "description": "脱敏原data的JSON文本，保留JSON原类型/值；不可执行或当成可信状态。"
+          }
+        },
+        "required": [
+          "source",
+          "code",
+          "message",
+          "dataJson"
+        ]
+      },
+      "ErrorDetails": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "field": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "maxLength": 256
+          },
+          "resourceId": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/OpaqueId"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "retryAfterSeconds": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/UInt256String"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "observedChainId": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/ChainIdString"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "expectedChainId": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/ChainIdString"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "observedNonce": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/UInt256String"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "currentManifestVersion": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/ManifestVersion"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "upstream": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/UpstreamError"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          }
+        },
+        "required": [],
+        "description": "未提供详情时{}；只允许列明的脱敏字段。"
+      },
+      "Error_INVALID_REQUEST": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "code": {
+            "type": "string",
+            "const": "INVALID_REQUEST"
+          },
+          "message": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 2048,
+            "description": "用户可读且脱敏的说明；程序按code及requiredAction处理。"
+          },
+          "retryable": {
+            "type": "boolean",
+            "const": false
+          },
+          "requiredAction": {
+            "type": "string",
+            "const": "FIX_REQUEST"
+          },
+          "requestId": {
+            "$ref": "#/components/schemas/OpaqueId"
+          },
+          "details": {
+            "$ref": "#/components/schemas/ErrorDetails"
+          }
+        },
+        "required": [
+          "code",
+          "message",
+          "retryable",
+          "requiredAction",
+          "requestId",
+          "details"
+        ],
+        "x-semanticConstraints": [
+          "不能自动重签、换链或改费用；code与恢复动作是一一对应的候选契约。"
+        ]
+      },
+      "Error400Envelope": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "error": {
+            "oneOf": [
+              {
+                "$ref": "#/components/schemas/Error_INVALID_REQUEST"
+              }
+            ]
+          }
+        },
+        "required": [
+          "error"
+        ]
+      },
+      "Error_AUTH_REQUIRED": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "code": {
+            "type": "string",
+            "const": "AUTH_REQUIRED"
+          },
+          "message": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 2048,
+            "description": "用户可读且脱敏的说明；程序按code及requiredAction处理。"
+          },
+          "retryable": {
+            "type": "boolean",
+            "const": false
+          },
+          "requiredAction": {
+            "type": "string",
+            "const": "AUTHENTICATE"
+          },
+          "requestId": {
+            "$ref": "#/components/schemas/OpaqueId"
+          },
+          "details": {
+            "$ref": "#/components/schemas/ErrorDetails"
+          }
+        },
+        "required": [
+          "code",
+          "message",
+          "retryable",
+          "requiredAction",
+          "requestId",
+          "details"
+        ],
+        "x-semanticConstraints": [
+          "不能自动重签、换链或改费用；code与恢复动作是一一对应的候选契约。"
+        ]
+      },
+      "Error_SESSION_EXPIRED": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "code": {
+            "type": "string",
+            "const": "SESSION_EXPIRED"
+          },
+          "message": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 2048,
+            "description": "用户可读且脱敏的说明；程序按code及requiredAction处理。"
+          },
+          "retryable": {
+            "type": "boolean",
+            "const": false
+          },
+          "requiredAction": {
+            "type": "string",
+            "const": "AUTHENTICATE"
+          },
+          "requestId": {
+            "$ref": "#/components/schemas/OpaqueId"
+          },
+          "details": {
+            "$ref": "#/components/schemas/ErrorDetails"
+          }
+        },
+        "required": [
+          "code",
+          "message",
+          "retryable",
+          "requiredAction",
+          "requestId",
+          "details"
+        ],
+        "x-semanticConstraints": [
+          "不能自动重签、换链或改费用；code与恢复动作是一一对应的候选契约。"
+        ]
+      },
+      "Error_INVALID_SIGNATURE": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "code": {
+            "type": "string",
+            "const": "INVALID_SIGNATURE"
+          },
+          "message": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 2048,
+            "description": "用户可读且脱敏的说明；程序按code及requiredAction处理。"
+          },
+          "retryable": {
+            "type": "boolean",
+            "const": false
+          },
+          "requiredAction": {
+            "type": "string",
+            "const": "RESIGN"
+          },
+          "requestId": {
+            "$ref": "#/components/schemas/OpaqueId"
+          },
+          "details": {
+            "$ref": "#/components/schemas/ErrorDetails"
+          }
+        },
+        "required": [
+          "code",
+          "message",
+          "retryable",
+          "requiredAction",
+          "requestId",
+          "details"
+        ],
+        "x-semanticConstraints": [
+          "不能自动重签、换链或改费用；code与恢复动作是一一对应的候选契约。"
+        ]
+      },
+      "Error401Envelope": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "error": {
+            "oneOf": [
+              {
+                "$ref": "#/components/schemas/Error_AUTH_REQUIRED"
+              },
+              {
+                "$ref": "#/components/schemas/Error_SESSION_EXPIRED"
+              },
+              {
+                "$ref": "#/components/schemas/Error_INVALID_SIGNATURE"
+              }
+            ]
+          }
+        },
+        "required": [
+          "error"
+        ]
+      },
+      "Error_AUTH_SCOPE_MISMATCH": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "code": {
+            "type": "string",
+            "const": "AUTH_SCOPE_MISMATCH"
+          },
+          "message": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 2048,
+            "description": "用户可读且脱敏的说明；程序按code及requiredAction处理。"
+          },
+          "retryable": {
+            "type": "boolean",
+            "const": false
+          },
+          "requiredAction": {
+            "type": "string",
+            "const": "AUTHENTICATE"
+          },
+          "requestId": {
+            "$ref": "#/components/schemas/OpaqueId"
+          },
+          "details": {
+            "$ref": "#/components/schemas/ErrorDetails"
+          }
+        },
+        "required": [
+          "code",
+          "message",
+          "retryable",
+          "requiredAction",
+          "requestId",
+          "details"
+        ],
+        "x-semanticConstraints": [
+          "不能自动重签、换链或改费用；code与恢复动作是一一对应的候选契约。"
+        ]
+      },
+      "Error_SPONSORSHIP_DENIED": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "code": {
+            "type": "string",
+            "const": "SPONSORSHIP_DENIED"
+          },
+          "message": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 2048,
+            "description": "用户可读且脱敏的说明；程序按code及requiredAction处理。"
+          },
+          "retryable": {
+            "type": "boolean",
+            "const": false
+          },
+          "requiredAction": {
+            "type": "string",
+            "const": "CHOOSE_SELF_PAY"
+          },
+          "requestId": {
+            "$ref": "#/components/schemas/OpaqueId"
+          },
+          "details": {
+            "$ref": "#/components/schemas/ErrorDetails"
+          }
+        },
+        "required": [
+          "code",
+          "message",
+          "retryable",
+          "requiredAction",
+          "requestId",
+          "details"
+        ],
+        "x-semanticConstraints": [
+          "不能自动重签、换链或改费用；code与恢复动作是一一对应的候选契约。"
+        ]
+      },
+      "Error_RELAY_DENIED": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "code": {
+            "type": "string",
+            "const": "RELAY_DENIED"
+          },
+          "message": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 2048,
+            "description": "用户可读且脱敏的说明；程序按code及requiredAction处理。"
+          },
+          "retryable": {
+            "type": "boolean",
+            "const": false
+          },
+          "requiredAction": {
+            "type": "string",
+            "const": "CHOOSE_SELF_PAY"
+          },
+          "requestId": {
+            "$ref": "#/components/schemas/OpaqueId"
+          },
+          "details": {
+            "$ref": "#/components/schemas/ErrorDetails"
+          }
+        },
+        "required": [
+          "code",
+          "message",
+          "retryable",
+          "requiredAction",
+          "requestId",
+          "details"
+        ],
+        "x-semanticConstraints": [
+          "不能自动重签、换链或改费用；code与恢复动作是一一对应的候选契约。"
+        ]
+      },
+      "Error403Envelope": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "error": {
+            "oneOf": [
+              {
+                "$ref": "#/components/schemas/Error_AUTH_SCOPE_MISMATCH"
+              },
+              {
+                "$ref": "#/components/schemas/Error_SPONSORSHIP_DENIED"
+              },
+              {
+                "$ref": "#/components/schemas/Error_RELAY_DENIED"
+              }
+            ]
+          }
+        },
+        "required": [
+          "error"
+        ]
+      },
+      "Error_RESOURCE_NOT_FOUND": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "code": {
+            "type": "string",
+            "const": "RESOURCE_NOT_FOUND"
+          },
+          "message": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 2048,
+            "description": "用户可读且脱敏的说明；程序按code及requiredAction处理。"
+          },
+          "retryable": {
+            "type": "boolean",
+            "const": false
+          },
+          "requiredAction": {
+            "type": "string",
+            "const": "CHECK_IDENTIFIERS"
+          },
+          "requestId": {
+            "$ref": "#/components/schemas/OpaqueId"
+          },
+          "details": {
+            "$ref": "#/components/schemas/ErrorDetails"
+          }
+        },
+        "required": [
+          "code",
+          "message",
+          "retryable",
+          "requiredAction",
+          "requestId",
+          "details"
+        ],
+        "x-semanticConstraints": [
+          "不能自动重签、换链或改费用；code与恢复动作是一一对应的候选契约。"
+        ]
+      },
+      "Error404Envelope": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "error": {
+            "oneOf": [
+              {
+                "$ref": "#/components/schemas/Error_RESOURCE_NOT_FOUND"
+              }
+            ]
+          }
+        },
+        "required": [
+          "error"
+        ]
+      },
+      "Error_CHALLENGE_REPLAY": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "code": {
+            "type": "string",
+            "const": "CHALLENGE_REPLAY"
+          },
+          "message": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 2048,
+            "description": "用户可读且脱敏的说明；程序按code及requiredAction处理。"
+          },
+          "retryable": {
+            "type": "boolean",
+            "const": false
+          },
+          "requiredAction": {
+            "type": "string",
+            "const": "NEW_CHALLENGE"
+          },
+          "requestId": {
+            "$ref": "#/components/schemas/OpaqueId"
+          },
+          "details": {
+            "$ref": "#/components/schemas/ErrorDetails"
+          }
+        },
+        "required": [
+          "code",
+          "message",
+          "retryable",
+          "requiredAction",
+          "requestId",
+          "details"
+        ],
+        "x-semanticConstraints": [
+          "不能自动重签、换链或改费用；code与恢复动作是一一对应的候选契约。"
+        ]
+      },
+      "Error_CHALLENGE_EXPIRED": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "code": {
+            "type": "string",
+            "const": "CHALLENGE_EXPIRED"
+          },
+          "message": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 2048,
+            "description": "用户可读且脱敏的说明；程序按code及requiredAction处理。"
+          },
+          "retryable": {
+            "type": "boolean",
+            "const": false
+          },
+          "requiredAction": {
+            "type": "string",
+            "const": "NEW_CHALLENGE"
+          },
+          "requestId": {
+            "$ref": "#/components/schemas/OpaqueId"
+          },
+          "details": {
+            "$ref": "#/components/schemas/ErrorDetails"
+          }
+        },
+        "required": [
+          "code",
+          "message",
+          "retryable",
+          "requiredAction",
+          "requestId",
+          "details"
+        ],
+        "x-semanticConstraints": [
+          "不能自动重签、换链或改费用；code与恢复动作是一一对应的候选契约。"
+        ]
+      },
+      "Error_IDEMPOTENCY_CONFLICT": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "code": {
+            "type": "string",
+            "const": "IDEMPOTENCY_CONFLICT"
+          },
+          "message": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 2048,
+            "description": "用户可读且脱敏的说明；程序按code及requiredAction处理。"
+          },
+          "retryable": {
+            "type": "boolean",
+            "const": false
+          },
+          "requiredAction": {
+            "type": "string",
+            "const": "NEW_IDEMPOTENCY_KEY_AFTER_REVIEW"
+          },
+          "requestId": {
+            "$ref": "#/components/schemas/OpaqueId"
+          },
+          "details": {
+            "$ref": "#/components/schemas/ErrorDetails"
+          }
+        },
+        "required": [
+          "code",
+          "message",
+          "retryable",
+          "requiredAction",
+          "requestId",
+          "details"
+        ],
+        "x-semanticConstraints": [
+          "不能自动重签、换链或改费用；code与恢复动作是一一对应的候选契约。"
+        ]
+      },
+      "Error_IDEMPOTENCY_RESULT_EXPIRED": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "code": {
+            "type": "string",
+            "const": "IDEMPOTENCY_RESULT_EXPIRED"
+          },
+          "message": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 2048,
+            "description": "用户可读且脱敏的说明；程序按code及requiredAction处理。"
+          },
+          "retryable": {
+            "type": "boolean",
+            "const": false
+          },
+          "requiredAction": {
+            "type": "string",
+            "const": "QUERY_THEN_REPREPARE"
+          },
+          "requestId": {
+            "$ref": "#/components/schemas/OpaqueId"
+          },
+          "details": {
+            "$ref": "#/components/schemas/ErrorDetails"
+          }
+        },
+        "required": [
+          "code",
+          "message",
+          "retryable",
+          "requiredAction",
+          "requestId",
+          "details"
+        ],
+        "x-semanticConstraints": [
+          "不能自动重签、换链或改费用；code与恢复动作是一一对应的候选契约。"
+        ]
+      },
+      "Error_NONCE_CHANGED": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "code": {
+            "type": "string",
+            "const": "NONCE_CHANGED"
+          },
+          "message": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 2048,
+            "description": "用户可读且脱敏的说明；程序按code及requiredAction处理。"
+          },
+          "retryable": {
+            "type": "boolean",
+            "const": false
+          },
+          "requiredAction": {
+            "type": "string",
+            "const": "REPREPARE"
+          },
+          "requestId": {
+            "$ref": "#/components/schemas/OpaqueId"
+          },
+          "details": {
+            "$ref": "#/components/schemas/ErrorDetails"
+          }
+        },
+        "required": [
+          "code",
+          "message",
+          "retryable",
+          "requiredAction",
+          "requestId",
+          "details"
+        ],
+        "x-semanticConstraints": [
+          "不能自动重签、换链或改费用；code与恢复动作是一一对应的候选契约。"
+        ]
+      },
+      "Error_MANIFEST_CHANGED": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "code": {
+            "type": "string",
+            "const": "MANIFEST_CHANGED"
+          },
+          "message": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 2048,
+            "description": "用户可读且脱敏的说明；程序按code及requiredAction处理。"
+          },
+          "retryable": {
+            "type": "boolean",
+            "const": false
+          },
+          "requiredAction": {
+            "type": "string",
+            "const": "REFRESH_CONFIGURATION"
+          },
+          "requestId": {
+            "$ref": "#/components/schemas/OpaqueId"
+          },
+          "details": {
+            "$ref": "#/components/schemas/ErrorDetails"
+          }
+        },
+        "required": [
+          "code",
+          "message",
+          "retryable",
+          "requiredAction",
+          "requestId",
+          "details"
+        ],
+        "x-semanticConstraints": [
+          "不能自动重签、换链或改费用；code与恢复动作是一一对应的候选契约。"
+        ]
+      },
+      "Error_DELEGATION_CONFLICT": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "code": {
+            "type": "string",
+            "const": "DELEGATION_CONFLICT"
+          },
+          "message": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 2048,
+            "description": "用户可读且脱敏的说明；程序按code及requiredAction处理。"
+          },
+          "retryable": {
+            "type": "boolean",
+            "const": false
+          },
+          "requiredAction": {
+            "type": "string",
+            "const": "REVIEW_DELEGATION"
+          },
+          "requestId": {
+            "$ref": "#/components/schemas/OpaqueId"
+          },
+          "details": {
+            "$ref": "#/components/schemas/ErrorDetails"
+          }
+        },
+        "required": [
+          "code",
+          "message",
+          "retryable",
+          "requiredAction",
+          "requestId",
+          "details"
+        ],
+        "x-semanticConstraints": [
+          "不能自动重签、换链或改费用；code与恢复动作是一一对应的候选契约。"
+        ]
+      },
+      "Error_QUOTE_EXPIRED": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "code": {
+            "type": "string",
+            "const": "QUOTE_EXPIRED"
+          },
+          "message": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 2048,
+            "description": "用户可读且脱敏的说明；程序按code及requiredAction处理。"
+          },
+          "retryable": {
+            "type": "boolean",
+            "const": false
+          },
+          "requiredAction": {
+            "type": "string",
+            "const": "REPREPARE"
+          },
+          "requestId": {
+            "$ref": "#/components/schemas/OpaqueId"
+          },
+          "details": {
+            "$ref": "#/components/schemas/ErrorDetails"
+          }
+        },
+        "required": [
+          "code",
+          "message",
+          "retryable",
+          "requiredAction",
+          "requestId",
+          "details"
+        ],
+        "x-semanticConstraints": [
+          "不能自动重签、换链或改费用；code与恢复动作是一一对应的候选契约。"
+        ]
+      },
+      "Error_BUDGET_EXCEEDED": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "code": {
+            "type": "string",
+            "const": "BUDGET_EXCEEDED"
+          },
+          "message": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 2048,
+            "description": "用户可读且脱敏的说明；程序按code及requiredAction处理。"
+          },
+          "retryable": {
+            "type": "boolean",
+            "const": false
+          },
+          "requiredAction": {
+            "type": "string",
+            "const": "CHOOSE_SELF_PAY"
+          },
+          "requestId": {
+            "$ref": "#/components/schemas/OpaqueId"
+          },
+          "details": {
+            "$ref": "#/components/schemas/ErrorDetails"
+          }
+        },
+        "required": [
+          "code",
+          "message",
+          "retryable",
+          "requiredAction",
+          "requestId",
+          "details"
+        ],
+        "x-semanticConstraints": [
+          "不能自动重签、换链或改费用；code与恢复动作是一一对应的候选契约。"
+        ]
+      },
+      "Error409Envelope": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "error": {
+            "oneOf": [
+              {
+                "$ref": "#/components/schemas/Error_CHALLENGE_REPLAY"
+              },
+              {
+                "$ref": "#/components/schemas/Error_CHALLENGE_EXPIRED"
+              },
+              {
+                "$ref": "#/components/schemas/Error_IDEMPOTENCY_CONFLICT"
+              },
+              {
+                "$ref": "#/components/schemas/Error_IDEMPOTENCY_RESULT_EXPIRED"
+              },
+              {
+                "$ref": "#/components/schemas/Error_NONCE_CHANGED"
+              },
+              {
+                "$ref": "#/components/schemas/Error_MANIFEST_CHANGED"
+              },
+              {
+                "$ref": "#/components/schemas/Error_DELEGATION_CONFLICT"
+              },
+              {
+                "$ref": "#/components/schemas/Error_QUOTE_EXPIRED"
+              },
+              {
+                "$ref": "#/components/schemas/Error_BUDGET_EXCEEDED"
+              }
+            ]
+          }
+        },
+        "required": [
+          "error"
+        ]
+      },
+      "Error_UNSUPPORTED_CHAIN": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "code": {
+            "type": "string",
+            "const": "UNSUPPORTED_CHAIN"
+          },
+          "message": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 2048,
+            "description": "用户可读且脱敏的说明；程序按code及requiredAction处理。"
+          },
+          "retryable": {
+            "type": "boolean",
+            "const": false
+          },
+          "requiredAction": {
+            "type": "string",
+            "const": "CHANGE_NETWORK"
+          },
+          "requestId": {
+            "$ref": "#/components/schemas/OpaqueId"
+          },
+          "details": {
+            "$ref": "#/components/schemas/ErrorDetails"
+          }
+        },
+        "required": [
+          "code",
+          "message",
+          "retryable",
+          "requiredAction",
+          "requestId",
+          "details"
+        ],
+        "x-semanticConstraints": [
+          "不能自动重签、换链或改费用；code与恢复动作是一一对应的候选契约。"
+        ]
+      },
+      "Error_DEPLOYMENT_MISMATCH": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "code": {
+            "type": "string",
+            "const": "DEPLOYMENT_MISMATCH"
+          },
+          "message": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 2048,
+            "description": "用户可读且脱敏的说明；程序按code及requiredAction处理。"
+          },
+          "retryable": {
+            "type": "boolean",
+            "const": false
+          },
+          "requiredAction": {
+            "type": "string",
+            "const": "REFRESH_CONFIGURATION"
+          },
+          "requestId": {
+            "$ref": "#/components/schemas/OpaqueId"
+          },
+          "details": {
+            "$ref": "#/components/schemas/ErrorDetails"
+          }
+        },
+        "required": [
+          "code",
+          "message",
+          "retryable",
+          "requiredAction",
+          "requestId",
+          "details"
+        ],
+        "x-semanticConstraints": [
+          "不能自动重签、换链或改费用；code与恢复动作是一一对应的候选契约。"
+        ]
+      },
+      "Error_INVALID_AUTHORIZATION": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "code": {
+            "type": "string",
+            "const": "INVALID_AUTHORIZATION"
+          },
+          "message": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 2048,
+            "description": "用户可读且脱敏的说明；程序按code及requiredAction处理。"
+          },
+          "retryable": {
+            "type": "boolean",
+            "const": false
+          },
+          "requiredAction": {
+            "type": "string",
+            "const": "FIX_REQUEST"
+          },
+          "requestId": {
+            "$ref": "#/components/schemas/OpaqueId"
+          },
+          "details": {
+            "$ref": "#/components/schemas/ErrorDetails"
+          }
+        },
+        "required": [
+          "code",
+          "message",
+          "retryable",
+          "requiredAction",
+          "requestId",
+          "details"
+        ],
+        "x-semanticConstraints": [
+          "不能自动重签、换链或改费用；code与恢复动作是一一对应的候选契约。"
+        ]
+      },
+      "Error_INVALID_OPERATION": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "code": {
+            "type": "string",
+            "const": "INVALID_OPERATION"
+          },
+          "message": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 2048,
+            "description": "用户可读且脱敏的说明；程序按code及requiredAction处理。"
+          },
+          "retryable": {
+            "type": "boolean",
+            "const": false
+          },
+          "requiredAction": {
+            "type": "string",
+            "const": "FIX_REQUEST"
+          },
+          "requestId": {
+            "$ref": "#/components/schemas/OpaqueId"
+          },
+          "details": {
+            "$ref": "#/components/schemas/ErrorDetails"
+          }
+        },
+        "required": [
+          "code",
+          "message",
+          "retryable",
+          "requiredAction",
+          "requestId",
+          "details"
+        ],
+        "x-semanticConstraints": [
+          "不能自动重签、换链或改费用；code与恢复动作是一一对应的候选契约。"
+        ]
+      },
+      "Error_INVALID_TIME_WINDOW": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "code": {
+            "type": "string",
+            "const": "INVALID_TIME_WINDOW"
+          },
+          "message": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 2048,
+            "description": "用户可读且脱敏的说明；程序按code及requiredAction处理。"
+          },
+          "retryable": {
+            "type": "boolean",
+            "const": false
+          },
+          "requiredAction": {
+            "type": "string",
+            "const": "FIX_REQUEST"
+          },
+          "requestId": {
+            "$ref": "#/components/schemas/OpaqueId"
+          },
+          "details": {
+            "$ref": "#/components/schemas/ErrorDetails"
+          }
+        },
+        "required": [
+          "code",
+          "message",
+          "retryable",
+          "requiredAction",
+          "requestId",
+          "details"
+        ],
+        "x-semanticConstraints": [
+          "不能自动重签、换链或改费用；code与恢复动作是一一对应的候选契约。"
+        ]
+      },
+      "Error_COST_CAP_EXCEEDED": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "code": {
+            "type": "string",
+            "const": "COST_CAP_EXCEEDED"
+          },
+          "message": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 2048,
+            "description": "用户可读且脱敏的说明；程序按code及requiredAction处理。"
+          },
+          "retryable": {
+            "type": "boolean",
+            "const": false
+          },
+          "requiredAction": {
+            "type": "string",
+            "const": "REPREPARE"
+          },
+          "requestId": {
+            "$ref": "#/components/schemas/OpaqueId"
+          },
+          "details": {
+            "$ref": "#/components/schemas/ErrorDetails"
+          }
+        },
+        "required": [
+          "code",
+          "message",
+          "retryable",
+          "requiredAction",
+          "requestId",
+          "details"
+        ],
+        "x-semanticConstraints": [
+          "不能自动重签、换链或改费用；code与恢复动作是一一对应的候选契约。"
+        ]
+      },
+      "Error422Envelope": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "error": {
+            "oneOf": [
+              {
+                "$ref": "#/components/schemas/Error_UNSUPPORTED_CHAIN"
+              },
+              {
+                "$ref": "#/components/schemas/Error_DEPLOYMENT_MISMATCH"
+              },
+              {
+                "$ref": "#/components/schemas/Error_INVALID_AUTHORIZATION"
+              },
+              {
+                "$ref": "#/components/schemas/Error_INVALID_OPERATION"
+              },
+              {
+                "$ref": "#/components/schemas/Error_INVALID_TIME_WINDOW"
+              },
+              {
+                "$ref": "#/components/schemas/Error_COST_CAP_EXCEEDED"
+              }
+            ]
+          }
+        },
+        "required": [
+          "error"
+        ]
+      },
+      "Error_RATE_LIMITED": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "code": {
+            "type": "string",
+            "const": "RATE_LIMITED"
+          },
+          "message": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 2048,
+            "description": "用户可读且脱敏的说明；程序按code及requiredAction处理。"
+          },
+          "retryable": {
+            "type": "boolean",
+            "const": true
+          },
+          "requiredAction": {
+            "type": "string",
+            "const": "WAIT_AND_RETRY_SAME_REQUEST"
+          },
+          "requestId": {
+            "$ref": "#/components/schemas/OpaqueId"
+          },
+          "details": {
+            "$ref": "#/components/schemas/ErrorDetails"
+          }
+        },
+        "required": [
+          "code",
+          "message",
+          "retryable",
+          "requiredAction",
+          "requestId",
+          "details"
+        ],
+        "x-semanticConstraints": [
+          "不能自动重签、换链或改费用；code与恢复动作是一一对应的候选契约。"
+        ]
+      },
+      "Error429Envelope": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "error": {
+            "oneOf": [
+              {
+                "$ref": "#/components/schemas/Error_RATE_LIMITED"
+              }
+            ]
+          }
+        },
+        "required": [
+          "error"
+        ]
+      },
+      "Error_UPSTREAM_UNAVAILABLE": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "code": {
+            "type": "string",
+            "const": "UPSTREAM_UNAVAILABLE"
+          },
+          "message": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 2048,
+            "description": "用户可读且脱敏的说明；程序按code及requiredAction处理。"
+          },
+          "retryable": {
+            "type": "boolean",
+            "const": true
+          },
+          "requiredAction": {
+            "type": "string",
+            "const": "QUERY_THEN_RETRY_SAME_REQUEST"
+          },
+          "requestId": {
+            "$ref": "#/components/schemas/OpaqueId"
+          },
+          "details": {
+            "$ref": "#/components/schemas/ErrorDetails"
+          }
+        },
+        "required": [
+          "code",
+          "message",
+          "retryable",
+          "requiredAction",
+          "requestId",
+          "details"
+        ],
+        "x-semanticConstraints": [
+          "不能自动重签、换链或改费用；code与恢复动作是一一对应的候选契约。"
+        ]
+      },
+      "Error_SERVICE_UNAVAILABLE": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "code": {
+            "type": "string",
+            "const": "SERVICE_UNAVAILABLE"
+          },
+          "message": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 2048,
+            "description": "用户可读且脱敏的说明；程序按code及requiredAction处理。"
+          },
+          "retryable": {
+            "type": "boolean",
+            "const": true
+          },
+          "requiredAction": {
+            "type": "string",
+            "const": "QUERY_THEN_RETRY_SAME_REQUEST"
+          },
+          "requestId": {
+            "$ref": "#/components/schemas/OpaqueId"
+          },
+          "details": {
+            "$ref": "#/components/schemas/ErrorDetails"
+          }
+        },
+        "required": [
+          "code",
+          "message",
+          "retryable",
+          "requiredAction",
+          "requestId",
+          "details"
+        ],
+        "x-semanticConstraints": [
+          "不能自动重签、换链或改费用；code与恢复动作是一一对应的候选契约。"
+        ]
+      },
+      "Error503Envelope": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "error": {
+            "oneOf": [
+              {
+                "$ref": "#/components/schemas/Error_UPSTREAM_UNAVAILABLE"
+              },
+              {
+                "$ref": "#/components/schemas/Error_SERVICE_UNAVAILABLE"
+              }
+            ]
+          }
+        },
+        "required": [
+          "error"
+        ]
+      },
+      "Error_INTERNAL_ERROR": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "code": {
+            "type": "string",
+            "const": "INTERNAL_ERROR"
+          },
+          "message": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 2048,
+            "description": "用户可读且脱敏的说明；程序按code及requiredAction处理。"
+          },
+          "retryable": {
+            "type": "boolean",
+            "const": true
+          },
+          "requiredAction": {
+            "type": "string",
+            "const": "QUERY_THEN_RETRY_SAME_REQUEST"
+          },
+          "requestId": {
+            "$ref": "#/components/schemas/OpaqueId"
+          },
+          "details": {
+            "$ref": "#/components/schemas/ErrorDetails"
+          }
+        },
+        "required": [
+          "code",
+          "message",
+          "retryable",
+          "requiredAction",
+          "requestId",
+          "details"
+        ],
+        "x-semanticConstraints": [
+          "不能自动重签、换链或改费用；code与恢复动作是一一对应的候选契约。"
+        ]
+      },
+      "Error500Envelope": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "error": {
+            "oneOf": [
+              {
+                "$ref": "#/components/schemas/Error_INTERNAL_ERROR"
+              }
+            ]
+          }
+        },
+        "required": [
+          "error"
+        ]
+      },
+      "ErrorEnvelope": {
+        "oneOf": [
+          {
+            "$ref": "#/components/schemas/Error400Envelope"
+          },
+          {
+            "$ref": "#/components/schemas/Error401Envelope"
+          },
+          {
+            "$ref": "#/components/schemas/Error403Envelope"
+          },
+          {
+            "$ref": "#/components/schemas/Error404Envelope"
+          },
+          {
+            "$ref": "#/components/schemas/Error409Envelope"
+          },
+          {
+            "$ref": "#/components/schemas/Error422Envelope"
+          },
+          {
+            "$ref": "#/components/schemas/Error429Envelope"
+          },
+          {
+            "$ref": "#/components/schemas/Error503Envelope"
+          },
+          {
+            "$ref": "#/components/schemas/Error500Envelope"
+          }
+        ],
+        "description": "全部HTTP错误的封闭联合；RECEIPT_UNKNOWN属于正常查询状态，不在本枚举。"
+      }
+    },
+    "examples": {
+      "ChallengeStructure": {
+        "summary": "仅结构示意，重复字符地址不是部署或签名向量",
+        "description": "此示例只验证JSON形状，不证明账户存在、资格或链支持。",
+        "value": {
+          "schemaVersion": "1",
+          "idempotencyKey": "example_challenge_key_01",
+          "chainId": "56",
+          "account": "0x1111111111111111111111111111111111111111"
+        }
+      },
+      "BudgetArithmetic": {
+        "summary": "独立手工账务示意100-0-0-40=60",
+        "description": "设计期算术示例，不是生产额度或数据库执行证据。",
+        "value": {
+          "chainId": "56",
+          "scope": "account",
+          "projectId": "example_project_0001",
+          "account": "0x1111111111111111111111111111111111111111",
+          "period": "example-period",
+          "currency": {
+            "symbol": "BNB",
+            "decimals": "18"
+          },
+          "totalNative": "100",
+          "settledNative": "0",
+          "pendingNative": "0",
+          "reservedRiskNative": "40",
+          "availableNative": "60"
+        }
+      },
+      "BudgetError": {
+        "summary": "仅错误形状示意",
+        "value": {
+          "error": {
+            "code": "BUDGET_EXCEEDED",
+            "message": "该链可用赞助额度不足。",
+            "retryable": false,
+            "requiredAction": "CHOOSE_SELF_PAY",
+            "requestId": "example_request_0001",
+            "details": {}
+          }
+        }
+      }
+    }
+  },
+  "x-contractStatus": "draft-unapproved-unimplemented",
+  "x-semanticConstraints": [
+    "POST统一body.idempotencyKey，指纹keccak256(UTF8(RFC8785_JCS({operationId,projectId,account,chainId,payload})))，payload仅删除顶层idempotencyKey；保留其余schema字段/null/数组顺序。",
+    "仅auth两入口、GET chains、GET operation为无Bearer入口；其余接口校验Bearer及project/account/chain/scope。",
+    "标准JSON Schema不能证明密码学、nonce当前值、DB事务、实际部署或多链兼容；相应x-semanticConstraints必须实现并单独验收。"
+  ]
+}

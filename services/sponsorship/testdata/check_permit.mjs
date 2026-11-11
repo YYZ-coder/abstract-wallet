@@ -1,0 +1,11 @@
+// Independent reference boundary: viem 2.57.17. Never imports the wallet SDK or Go code.
+// key=1 is a public test fixture; no real keys are read by this script.
+import { encodeAbiParameters, hashTypedData, keccak256, parseAbiParameters, recoverTypedDataAddress, toHex } from 'viem';
+let input='';for await(const chunk of process.stdin)input+=chunk;
+const {request:b,permit:p}=JSON.parse(input),u=b.unsignedUserOperation,w=b.accountWindow;
+const fields=[['version','uint8'],['expectedDelegate','address'],['sender','address'],['entryPoint','address'],['nonce','uint256'],['initCodeHash','bytes32'],['callDataHash','bytes32'],['accountGasLimits','bytes32'],['preVerificationGas','uint256'],['gasFees','bytes32'],['paymasterVerificationGasLimit','uint128'],['paymasterPostOpGasLimit','uint128'],['validAfter','uint48'],['validUntil','uint48'],['maxCost','uint256'],['reservationId','bytes32']];
+const message={version:1,expectedDelegate:b.expectedDelegate,sender:b.account,entryPoint:b.entryPoint,nonce:BigInt(u.nonce),initCodeHash:keccak256('0x7702000000000000000000000000000000000000'),callDataHash:keccak256(u.callData),accountGasLimits:toHex((BigInt(u.verificationGasLimit)<<128n)|BigInt(u.callGasLimit),{size:32}),preVerificationGas:BigInt(u.preVerificationGas),gasFees:toHex((BigInt(u.maxPriorityFeePerGas)<<128n)|BigInt(u.maxFeePerGas),{size:32}),paymasterVerificationGasLimit:BigInt(u.paymasterVerificationGasLimit),paymasterPostOpGasLimit:BigInt(u.paymasterPostOpGasLimit),validAfter:BigInt(w.validAfter),validUntil:BigInt(w.validUntil),maxCost:BigInt(b.maxCost),reservationId:p.chainReservationId};
+const typed={domain:{name:'AbstractWalletPaymaster',version:'1',chainId:BigInt(b.chainId),verifyingContract:u.paymaster},types:{Permit:fields.map(([name,type])=>({name,type}))},primaryType:'Permit',message};
+const digest=hashTypedData(typed),signer=await recoverTypedDataAddress({...typed,signature:p.sponsorSignature});
+const data=encodeAbiParameters(parseAbiParameters('uint8,address,uint48,uint48,uint256,bytes32,bytes'),[1,b.expectedDelegate,BigInt(w.validAfter),BigInt(w.validUntil),BigInt(b.maxCost),p.chainReservationId,p.sponsorSignature]);
+console.log(JSON.stringify({digest,signer:signer.toLowerCase(),data}));

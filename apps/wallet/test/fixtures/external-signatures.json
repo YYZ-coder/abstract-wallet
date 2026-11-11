@@ -1,0 +1,27 @@
+{
+  "source": "Independent viem 2.57.17 reference, public scalar key1. Does not import external-wallet.ts.",
+  "address": "0x7E5F4552091A69125d5DfCb7b8C2659029395Bdf",
+  "typedData": {
+    "domain": {
+      "name": "ProviderFixture",
+      "version": "1",
+      "chainId": 421614,
+      "verifyingContract": "0x7E5F4552091A69125d5DfCb7b8C2659029395Bdf"
+    },
+    "types": {
+      "Example": [
+        {
+          "name": "amount",
+          "type": "uint256"
+        }
+      ]
+    },
+    "primaryType": "Example",
+    "message": {
+      "amount": "9007199254740993"
+    }
+  },
+  "typedSignature": "0x3e4112cd187a0cdbf1161f903b633ba8a15aa0c702b3845a0c03ed0aec102976486a7f5229ee00717ddaf2b899cafbcfa8ec578b51aa66cabf4099ba62aaef831c",
+  "message": "Abstract Wallet provider fixture",
+  "messageSignature": "0x77e6e336e96f55c95dc302e6ce29f4fa49cbf1e7bffd827763b80c03e1bca4742efe5a12c8c6537bfaa115c6fa5bb81a730afc078e94f5f5aa5f6d3b45cedc931b"
+}

@@ -1,0 +1,26 @@
+{
+  "source": "cast typed-data sign; viem 2.57.17 hash/recover; PUBLIC TEST KEY=1",
+  "typed": {
+    "domain": {
+      "name": "AbstractWallet",
+      "version": "1",
+      "chainId": 421614,
+      "verifyingContract": "0x7E5F4552091A69125d5DfCb7b8C2659029395Bdf"
+    },
+    "primaryType": "WalletMessage",
+    "types": {
+      "WalletMessage": [
+        {
+          "name": "messageHash",
+          "type": "bytes32"
+        }
+      ]
+    },
+    "message": {
+      "messageHash": "0x2222222222222222222222222222222222222222222222222222222222222222"
+    }
+  },
+  "digest": "0x572380007cc60383b1237d37266765658b4ae50efdcf4da797ce0ed86c381578",
+  "signature": "0x82f9c7c71a01939e06bbe44da4e2b2b4640c737fadbd7f3ca217781309495f445ddbcf308d5ad91df2373031f15a0f0d0a45a74ece0c8e59bc4b88fd3e6f15a91b",
+  "recovered": "0x7E5F4552091A69125d5DfCb7b8C2659029395Bdf"
+}

@@ -1,0 +1,45 @@
+{
+  "name": "abstract-wallet",
+  "private": true,
+  "version": "0.1.0",
+  "type": "module",
+  "workspaces": [
+    "packages/*",
+    "apps/*",
+    "services/bundler"
+  ],
+  "scripts": {
+    "test": "npm run test --workspaces --if-present",
+    "test:all": "python3 scripts/test-all.py",
+    "test:sdk": "npm run test -w @abstract-wallet/sdk",
+    "test:wallet": "npm run test -w @abstract-wallet/wallet",
+    "test:contracts": "forge test --root contracts --offline",
+    "test:backend": "cd services/sponsorship && go test ./...",
+    "typecheck": "npm run typecheck --workspaces --if-present",
+    "build": "npm run build --workspaces --if-present",
+    "dev": "npm run dev -w @abstract-wallet/wallet",
+    "test:bundler": "npm run test -w @abstract-wallet/bundler",
+    "dev:bundler": "npm run dev -w @abstract-wallet/bundler"
+  },
+  "dependencies": {
+    "viem": "2.57.17",
+    "react": "19.3.1",
+    "react-dom": "19.3.1",
+    "lucide-react": "0.468.0",
+    "@openzeppelin/contracts": "5.4.0"
+  },
+  "devDependencies": {
+    "vitest": "3.2.7",
+    "vite": "8.3.7",
+    "typescript": "5.9.3",
+    "tsx": "4.21.0",
+    "@testing-library/react": "16.3.3",
+    "@testing-library/jest-dom": "6.9.1",
+    "@testing-library/user-event": "14.6.1",
+    "jsdom": "26.1.0",
+    "@types/react": "19.2.14",
+    "@types/react-dom": "19.2.3",
+    "@types/node": "25.5.0",
+    "@playwright/test": "1.58.2"
+  }
+}
