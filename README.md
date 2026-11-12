@@ -9,8 +9,18 @@ The current implementation targets **Arbitrum Sepolia (chain ID 421614)** and a 
 - Original-address delegation, native transfers and atomic call batches through EntryPoint v0.9.0.
 - Native-gas payment and signed, budget-limited sponsorship.
 - Browser-wallet connection with explicit capability checks. Wallets unable to provide the required authorization are shown a limitation; the application does not substitute a new account address.
-- Account/delegation inspection, transaction progress, and read-only recovery of a recent operation after reload.
+- A light retro handheld interface with interactive home, transfer preview, signing and result screens.
+- Account/delegation inspection, automatic transaction progress, balance refresh, and read-only recovery of a recent operation after reload.
+- Explicit L2 execution, safe and finalized stages under the Arbitrum Sepolia confirmation policy. Timeouts retain the last verified result and retry automatically.
 - Optional project-funded test ETH distribution, with per-address and daily pool limits.
+
+## Confirmation policy
+
+The accepted Arbitrum Sepolia policy is `arbitrum-sepolia-finalized-v1`. A canonical `finalized` checkpoint must cover the exact canonical transaction receipt. The client pins checkpoint hashes to numeric blocks, checks head ordering, and rechecks the receipt block before confirmation. Bundler success flags, elapsed time and L2 block depth do not substitute for public-chain finality. Local Anvil uses its separate explicit depth policy.
+
+The interface distinguishes L2 execution from safe and finalized confirmation. Normal read-only polling runs every three seconds; failures back off by 6, 12 and 30 seconds, with a 15-second observation deadline. Manual and automatic refreshes share an in-flight guard. Account, network and operation changes invalidate stale responses. Status reads do not sign or rebroadcast transactions.
+
+Here, finalized means **RPC-reported parent-chain batch/data finality**. It does not mean assertion challenge completion or withdrawal readiness. The prototype trusts its configured Arbitrum RPC rather than verifying a parent-chain inclusion proof itself.
 
 ## Repository layout
 
@@ -102,8 +112,16 @@ npm run test:all
 
 `SOLC_PATH` must remain set. PostgreSQL tests are explicitly skipped when `TEST_DATABASE_URL` is absent. Test logs and generated verification output remain local. With the local chain running and both contract projects built, `npx tsx scripts/local-integration.ts` exercises real type-4 authorization and EntryPoint execution against Anvil.
 
+## Accepted verification
+
+The 2026-11-12 accepted build passed **408 top-level tests**: 53 Solidity, 17 SDK, 260 wallet UI/service, 12 bundler and 66 Go tests. Go also reported 106 passing subtests. The full run included a real isolated PostgreSQL database, the Go race detector, `go vet`, TypeScript checks and production builds, with no failed or skipped tests. Behavior changes were developed in sequential Red/Green slices; release filtering is validated separately without claiming a new TDD cycle.
+
+A real Arbitrum Sepolia transfer preserved the already-enabled EOA address, delivered exactly 0.0001 test ETH, and reconciled native balances, EntryPoint deposit changes, nonce and event fees. Independent official-RPC observations followed L2, safe and finalized stages. Both the active transaction view and a reloaded read-only view reached final confirmation automatically. A temporary local query-service interruption retained the verified result and recovered automatically without manual refresh or another signature.
+
+Private design documents, local test evidence, funded-account records, credentials and generated live runtime manifests are intentionally excluded from this repository. Reproduce unit and local protocol checks using the commands above; public-testnet verification requires your own funded accounts and configuration.
+
 ## Public testnet operation
 
 Public deployment requires your own funded Arbitrum Sepolia test accounts, protected role-specific configuration, and a matching RPC/API/bundler/runtime manifest. No existing deployment credentials or live account configuration are distributed here. The deployment and integration scripts are developer tools; inspect their required inputs before running them on the public testnet.
 
-The development bundler is not a production bundler. Parent-chain finality, a second independent bundler, universal wallet compatibility, production key storage and multi-chain acceptance remain outside this release's verified scope. EIP-7702 preserves the EOA root key's ultimate control; delegation does not revoke that key.
+The development bundler is not a production bundler. A second independent bundler, universal wallet compatibility, production key storage, withdrawal/assertion finality and multi-chain acceptance remain outside this release's verified scope. EIP-7702 preserves the EOA root key's ultimate control; delegation does not revoke that key.

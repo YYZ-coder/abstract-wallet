@@ -1,5 +1,6 @@
 import { decodeEventLog, formatEther, isAddress, keccak256, zeroAddress } from 'viem';
 import { entryPoint09Abi } from 'viem/account-abstraction';
+import { readConfirmation } from './confirmation-policy';
 import type { RuntimeNetwork } from './browser-services';
 import type { ObservedOperation, OperationReference, OperationStatus } from './services';
 
@@ -49,15 +50,9 @@ async function readRecordedOperation(network:RuntimeNetwork, input:OperationRefe
         }catch{/* Only the configured EntryPoint's matching operation event is execution evidence. */}
       }
       if(event){
-        const [canonical,head]=await Promise.all([rpc('eth_getBlockByNumber',[receipt.blockNumber,false]),rpc('eth_getBlockByNumber',['latest',false])]);
+        const observed=await readConfirmation(network,receipt,rpc);
         transactionHash=candidate;
-        if(canonical?.hash?.toLowerCase()!==receipt.blockHash.toLowerCase())operation={...operation,confirmation:'reorged'};
-        else{
-          const required=network.confirmationsRequired??(network.mode==='local'?1:undefined);
-          const depth=BigInt(head.number)-BigInt(receipt.blockNumber)+1n;
-          const confirmed=required!==undefined&&Number.isSafeInteger(required)&&required>0&&depth>=BigInt(required);
-          operation={...operation,submission:'accepted',execution:event.success?'succeeded':'reverted',confirmation:confirmed?'confirmed':'pending'};
-        }
+        operation={...operation,...observed,...(observed.confirmation==='reorged'?{}:{submission:'accepted',execution:event.success?'succeeded':'reverted'})};
       }
     }
   }

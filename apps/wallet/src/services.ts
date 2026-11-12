@@ -8,11 +8,21 @@ export type WalletSnapshot = {
 export type WalletChoice = { id: string; name: string };
 export type TransferDraft = { recipient: string; amount: string; sponsored: boolean };
 export type Preview = { recipient: string; amount: string; maxCost: string; payment: 'self' | 'sponsored'; id: string };
+export type FinalityEvidence = {
+  policyId: 'arbitrum-sepolia-finalized-v1';
+  stage: 'l2' | 'safe' | 'finalized' | 'unavailable';
+  transactionHash: string;
+  blockNumber: string;
+  blockHash: string;
+  safeBlockNumber?: string;
+  finalizedBlockNumber?: string;
+};
 export type OperationStatus = {
   hash: string;
   submission: 'accepted' | 'unknown' | 'rejected';
   execution: 'unknown' | 'succeeded' | 'reverted';
   confirmation: 'pending' | 'confirmed' | 'reorged';
+  finality?: FinalityEvidence;
 };
 export type TestFundsClaim = {
   claimId: string;

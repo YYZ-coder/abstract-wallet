@@ -18,11 +18,14 @@ const indexedTx = "0x66666666666666666666666666666666666666666666666666666666666
 const indexedBlock = "0x1111111111111111111111111111111111111111111111111111111111111111"
 
 type indexRPCFixture struct {
-	event         map[string]any
-	receipt       map[string]any
-	nonce         string
-	code          string
-	canonicalHash string
+	event               map[string]any
+	receipt             map[string]any
+	nonce               string
+	code                string
+	canonicalHash       string
+	blockResponses      map[string]any
+	blockErrors         map[string]any
+	beforeBlockResponse func(string)
 }
 
 func canonicalIndexFixture(t *testing.T) (wallet.Config, *indexRPCFixture) {
@@ -55,7 +58,16 @@ func canonicalIndexFixture(t *testing.T) (wallet.Config, *indexRPCFixture) {
 			result = f.receipt
 		case "eth_getBlockByNumber":
 			tag := q["params"].([]any)[0].(string)
-			if tag == "latest" {
+			if f.beforeBlockResponse != nil {
+				f.beforeBlockResponse(tag)
+			}
+			if response, configured := f.blockErrors[tag]; configured {
+				_ = json.NewEncoder(w).Encode(map[string]any{"jsonrpc": "2.0", "id": q["id"], "error": response})
+				return
+			}
+			if response, configured := f.blockResponses[tag]; configured {
+				result = response
+			} else if tag == "latest" {
 				result = map[string]any{"number": "0x65", "hash": "0x" + strings.Repeat("22", 32), "timestamp": "0x6b49d201"}
 			} else {
 				result = map[string]any{"number": "0x64", "hash": f.canonicalHash, "timestamp": "0x6b49d200"}
@@ -66,6 +78,186 @@ func canonicalIndexFixture(t *testing.T) (wallet.Config, *indexRPCFixture) {
 	t.Cleanup(rpcServer.Close)
 	c.RPCURL = rpcServer.URL
 	return c, f
+}
+
+func TestIndexerArbitrumFinalityDoesNotFallBackToDepthWhenTagUnavailable(t *testing.T) {
+	c, f := canonicalIndexFixture(t)
+	c.Manifest["confirmationPolicy"] = map[string]any{"status": "frozen", "policyId": "arbitrum-sepolia-finalized-v1", "requiredConfirmations": "1"}
+	f.blockResponses = map[string]any{"finalized": nil}
+	h := wallet.New(c)
+	status, op := request(t, h, "GET", "/v1/operations/"+indexedHash+"?chainId=421614&entryPoint="+ep, "", "")
+	if status != 200 || op["executionState"] != "succeeded" || op["confirmationState"] != "pending" {
+		t.Fatalf("unavailable finalized proof must retain canonical execution as pending, never confirm from L2 depth: status=%d operation=%v", status, op)
+	}
+}
+
+func TestIndexerArbitrumFinalityRejectsCheckpointThatConflictsWithReceiptAtSameHeight(t *testing.T) {
+	c, f := canonicalIndexFixture(t)
+	c.Manifest["confirmationPolicy"] = map[string]any{"status": "frozen", "policyId": "arbitrum-sepolia-finalized-v1", "requiredConfirmations": "1"}
+	otherHash := "0x" + strings.Repeat("99", 32)
+	f.blockResponses = map[string]any{"finalized": map[string]any{"number": "0x64", "hash": otherHash, "timestamp": "0x6b49d200"}}
+	// Simulate a fork between receipt verification and checkpoint verification. The
+	// new canonical block cannot finalize a receipt proven against the old hash.
+	f.beforeBlockResponse = func(tag string) {
+		if tag == "finalized" {
+			f.canonicalHash = otherHash
+		}
+	}
+	h := wallet.New(c)
+	status, op := request(t, h, "GET", "/v1/operations/"+indexedHash+"?chainId=421614&entryPoint="+ep, "", "")
+	if status != 200 || op["confirmationState"] != "reorged" || op["executionState"] != "unknown" {
+		t.Fatalf("same-height finalized checkpoint must identify the receipt block exactly: status=%d operation=%v", status, op)
+	}
+}
+
+func TestIndexerArbitrumFinalityRevalidatesReceiptAfterNewerCheckpoint(t *testing.T) {
+	c, f := canonicalIndexFixture(t)
+	c.Manifest["confirmationPolicy"] = map[string]any{"status": "frozen", "policyId": "arbitrum-sepolia-finalized-v1", "requiredConfirmations": "1"}
+	checkpoint := map[string]any{"number": "0x65", "hash": "0x" + strings.Repeat("22", 32), "timestamp": "0x6b49d201"}
+	f.blockResponses = map[string]any{"finalized": checkpoint, "0x65": checkpoint}
+	// A newer checkpoint on the replacement branch does not prove a receipt
+	// verified on the former branch before the checkpoint was requested.
+	f.beforeBlockResponse = func(tag string) {
+		if tag == "finalized" {
+			f.canonicalHash = "0x" + strings.Repeat("99", 32)
+		}
+	}
+	h := wallet.New(c)
+	status, op := request(t, h, "GET", "/v1/operations/"+indexedHash+"?chainId=421614&entryPoint="+ep, "", "")
+	if status != 200 || op["confirmationState"] != "reorged" || op["executionState"] != "unknown" {
+		t.Fatalf("newer finalized checkpoint must not finalize an orphaned receipt: status=%d operation=%v", status, op)
+	}
+}
+
+func TestIndexerArbitrumLateReorgInvalidatesExecutionEvidenceAndRestoresRisk(t *testing.T) {
+	c, f := canonicalIndexFixture(t)
+	c.Manifest["confirmationPolicy"] = map[string]any{"status": "frozen", "policyId": "arbitrum-sepolia-finalized-v1", "requiredConfirmations": "1"}
+	f.blockResponses = map[string]any{"finalized": map[string]any{"number": "0x63", "hash": "0x" + strings.Repeat("33", 32)}}
+	h := wallet.New(c)
+	token, _, hash := issueIndexedPermit(t, h, f)
+	path := "/v1/operations/" + hash + "?chainId=421614&entryPoint=" + ep
+	status, op := request(t, h, "GET", path, "", "")
+	if status != 200 || op["confirmationState"] != "pending" {
+		t.Fatalf("initial canonical inclusion missing: %d %v", status, op)
+	}
+	checkpoint := map[string]any{"number": "0x65", "hash": "0x" + strings.Repeat("22", 32), "timestamp": "0x6b49d201"}
+	f.blockResponses["finalized"] = checkpoint
+	f.blockResponses["0x65"] = checkpoint
+	f.beforeBlockResponse = func(tag string) {
+		if tag == "finalized" {
+			f.canonicalHash = "0x" + strings.Repeat("99", 32)
+		}
+	}
+	status, op = request(t, h, "GET", path, "", "")
+	if status != 200 || op["confirmationState"] != "reorged" || op["executionState"] != "unknown" || op["fee"] != nil || op["chainObservation"] != nil {
+		t.Fatalf("explicit late canonical mismatch must invalidate execution and cost immediately: %d %v", status, op)
+	}
+	for _, value := range op["evidence"].([]any) {
+		if value.(map[string]any)["verified"] == true {
+			t.Fatalf("orphaned execution evidence cannot remain verified: %v", op)
+		}
+	}
+	_, budget := request(t, h, "GET", "/v1/budgets?chainId=421614&period=test-period", "", token)
+	b := budget["accountBudget"].(map[string]any)
+	if b["pendingNative"] != "0" || b["settledNative"] != "0" || b["reservedRiskNative"] != "40" || b["availableNative"] != "60" {
+		t.Fatalf("late reorg must restore the entire outstanding reservation: %v", b)
+	}
+}
+
+func TestIndexerArbitrumUnavailableLateReceiptCheckDoesNotInventReorg(t *testing.T) {
+	cases := []struct {
+		name  string
+		block any
+		err   any
+	}{
+		{name: "missing"},
+		{name: "malformed_hash", block: map[string]any{"number": "0x64", "hash": "0x12"}},
+		{name: "rpc_error", err: map[string]any{"code": -32000, "message": "temporarily unavailable"}},
+	}
+	for _, tc := range cases {
+		t.Run(tc.name, func(t *testing.T) {
+			c, f := canonicalIndexFixture(t)
+			c.Manifest["confirmationPolicy"] = map[string]any{"status": "frozen", "policyId": "arbitrum-sepolia-finalized-v1", "requiredConfirmations": "1"}
+			checkpoint := map[string]any{"number": "0x65", "hash": "0x" + strings.Repeat("22", 32), "timestamp": "0x6b49d201"}
+			f.blockResponses = map[string]any{"finalized": checkpoint, "0x65": checkpoint}
+			f.beforeBlockResponse = func(tag string) {
+				if tag == "finalized" {
+					f.blockResponses["0x64"] = tc.block
+					if tc.err != nil {
+						f.blockErrors = map[string]any{"0x64": tc.err}
+					}
+				}
+			}
+			status, op := request(t, wallet.New(c), "GET", "/v1/operations/"+indexedHash+"?chainId=421614&entryPoint="+ep, "", "")
+			if status != 200 || op["executionState"] != "succeeded" || op["confirmationState"] != "pending" || op["fee"] == nil {
+				t.Fatalf("unavailable late proof is neither finality nor explicit reorg evidence: %d %v", status, op)
+			}
+		})
+	}
+}
+
+func TestIndexerArbitrumFinalityKeepsInvalidCheckpointProofsPending(t *testing.T) {
+	checkpointHash := "0x" + strings.Repeat("22", 32)
+	cases := []struct {
+		name      string
+		finalized any
+		canonical any
+		rpcError  any
+	}{
+		{name: "unsupported", rpcError: map[string]any{"code": -32602, "message": "unsupported finalized block tag"}},
+		{name: "malformed_result", finalized: "not a block"},
+		{name: "malformed_number", finalized: map[string]any{"number": "101", "hash": checkpointHash}},
+		{name: "malformed_hash", finalized: map[string]any{"number": "0x65", "hash": "0x12"}, canonical: map[string]any{"number": "0x65", "hash": "0x12"}},
+		{name: "lagging", finalized: map[string]any{"number": "0x63", "hash": checkpointHash}},
+		{name: "future", finalized: map[string]any{"number": "0x66", "hash": checkpointHash}},
+		{name: "noncanonical", finalized: map[string]any{"number": "0x65", "hash": "0x" + strings.Repeat("33", 32)}, canonical: map[string]any{"number": "0x65", "hash": checkpointHash}},
+		{name: "canonical_number_mismatch", finalized: map[string]any{"number": "0x65", "hash": checkpointHash}, canonical: map[string]any{"number": "0x64", "hash": checkpointHash}},
+	}
+	for _, tc := range cases {
+		t.Run(tc.name, func(t *testing.T) {
+			c, f := canonicalIndexFixture(t)
+			c.Manifest["confirmationPolicy"] = map[string]any{"status": "frozen", "policyId": "arbitrum-sepolia-finalized-v1", "requiredConfirmations": "1"}
+			f.blockResponses = map[string]any{"finalized": tc.finalized, "0x65": tc.canonical}
+			if tc.rpcError != nil {
+				f.blockErrors = map[string]any{"finalized": tc.rpcError}
+			}
+			h := wallet.New(c)
+			status, op := request(t, h, "GET", "/v1/operations/"+indexedHash+"?chainId=421614&entryPoint="+ep, "", "")
+			if status != 200 || op["executionState"] != "succeeded" || op["confirmationState"] != "pending" {
+				t.Fatalf("invalid finality proof cannot promote canonical execution to confirmed/finalized: status=%d operation=%v", status, op)
+			}
+		})
+	}
+}
+
+func TestIndexerArbitrumFinalityPromotesOnlyAfterCanonicalCheckpointCoversReceipt(t *testing.T) {
+	c, f := canonicalIndexFixture(t)
+	c.Manifest["confirmationPolicy"] = map[string]any{"status": "frozen", "policyId": "arbitrum-sepolia-finalized-v1", "requiredConfirmations": "1"}
+	f.blockResponses = map[string]any{"finalized": map[string]any{"number": "0x63", "hash": "0x" + strings.Repeat("33", 32)}}
+	h := wallet.New(c)
+	token, _, hash := issueIndexedPermit(t, h, f)
+	path := "/v1/operations/" + hash + "?chainId=421614&entryPoint=" + ep
+	status, op := request(t, h, "GET", path, "", "")
+	if status != 200 || op["executionState"] != "succeeded" || op["confirmationState"] != "pending" {
+		t.Fatalf("canonical receipt ahead of finalized checkpoint must remain pending: %d %v", status, op)
+	}
+	_, budget := request(t, h, "GET", "/v1/budgets?chainId=421614&period=test-period", "", token)
+	b := budget["accountBudget"].(map[string]any)
+	if b["settledNative"] != "0" || b["pendingNative"] != "25" || b["reservedRiskNative"] != "15" || b["availableNative"] != "60" {
+		t.Fatalf("risk must remain reserved before finality: %v", b)
+	}
+	checkpoint := map[string]any{"number": "0x65", "hash": "0x" + strings.Repeat("22", 32), "timestamp": "0x6b49d201"}
+	f.blockResponses["finalized"] = checkpoint
+	f.blockResponses["0x65"] = checkpoint
+	status, op = request(t, h, "GET", path, "", "")
+	if status != 200 || op["confirmationState"] != "finalized" || op["fee"].(map[string]any)["confirmationState"] != "finalized" {
+		t.Fatalf("canonical finalized checkpoint covering receipt must promote operation and fee: %d %v", status, op)
+	}
+	_, budget = request(t, h, "GET", "/v1/budgets?chainId=421614&period=test-period", "", token)
+	b = budget["accountBudget"].(map[string]any)
+	if b["settledNative"] != "25" || b["pendingNative"] != "0" || b["reservedRiskNative"] != "0" || b["availableNative"] != "75" {
+		t.Fatalf("only independently proven finality may release unused reserved risk: %v", b)
+	}
 }
 
 func permitOperationHashReference(t *testing.T, permit map[string]any) string {

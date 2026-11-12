@@ -36,3 +36,5 @@ README*
 *.keystore
 *.log
 __pycache__/
+
+/design-qa.md

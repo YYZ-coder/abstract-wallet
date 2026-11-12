@@ -272,7 +272,7 @@ func (s *server) indexObservation(block *indexedBlock) J {
 	return J{"blockNumber": strconv.FormatUint(number, 10), "blockHash": strings.ToLower(block.Hash), "blockTimestamp": strconv.FormatUint(stamp, 10), "observedAt": strconv.FormatInt(s.c.Clock().Unix(), 10)}
 }
 func (s *server) indexEvidence(kind string, event operationEvent, block *indexedBlock) J {
-	out := J{"kind": kind, "sourceId": "rpc_indexer", "verified": true, "blockNumber": s.indexObservation(block)["blockNumber"], "blockHash": strings.ToLower(block.Hash), "transactionHash": strings.ToLower(event.Log.TransactionHash), "logIndex": nil, "observedAt": strconv.FormatInt(s.c.Clock().Unix(), 10)}
+	out := J{"kind": kind, "sourceId": "rpc_indexer_421614", "verified": true, "blockNumber": s.indexObservation(block)["blockNumber"], "blockHash": strings.ToLower(block.Hash), "transactionHash": strings.ToLower(event.Log.TransactionHash), "logIndex": nil, "observedAt": strconv.FormatInt(s.c.Clock().Unix(), 10)}
 	if kind == "user_operation_event" {
 		n, _ := hexutil.DecodeUint64(event.Log.LogIndex)
 		out["logIndex"] = strconv.FormatUint(n, 10)
@@ -288,6 +288,13 @@ func (s *server) projectOperation(ctx context.Context, event operationEvent, rec
 		out["executionState"] = "succeeded"
 	}
 	confirmation := s.indexConfirmation(ctx, block, head)
+	if confirmation == "reorged" {
+		out = s.unknownOperation(event.Hash, s.c.Manifest["chainId"].(string), strings.ToLower(event.Log.Address))
+		out["confirmationState"] = "reorged"
+		out["transactionHashes"] = []any{strings.ToLower(event.Log.TransactionHash)}
+		out["indexedBlockNumber"] = s.indexObservation(head)["blockNumber"]
+		return out
+	}
 	out["confirmationState"] = confirmation
 	out["transactionHashes"] = []any{strings.ToLower(event.Log.TransactionHash)}
 	out["chainObservation"] = s.indexObservation(block)
@@ -360,6 +367,10 @@ func (s *server) indexConfirmation(ctx context.Context, block, head *indexedBloc
 	if state != "confirmed" {
 		return state
 	}
+	if id == "arbitrum-sepolia-finalized-v1" {
+		// The configured depth is an inclusion floor, never an Arbitrum finality proof.
+		state = "pending"
+	}
 	var finalized *indexedBlock
 	if rpcJSON(ctx, s.c.RPCURL, "eth_getBlockByNumber", []any{"finalized", false}, &finalized) != nil || finalized == nil {
 		return state
@@ -374,6 +385,18 @@ func (s *server) indexConfirmation(ctx context.Context, block, head *indexedBloc
 	}
 	if _, ok := eventBytes(finalized.Hash, 32); !ok {
 		return state
+	}
+	if id == "arbitrum-sepolia-finalized-v1" {
+		var receiptBlock *indexedBlock
+		if rpcJSON(ctx, s.c.RPCURL, "eth_getBlockByNumber", []any{block.Number, false}, &receiptBlock) != nil || receiptBlock == nil || receiptBlock.Number != block.Number {
+			return state
+		}
+		if _, valid := eventBytes(receiptBlock.Hash, 32); !valid {
+			return state
+		}
+		if !strings.EqualFold(receiptBlock.Hash, block.Hash) {
+			return "reorged"
+		}
 	}
 	return "finalized"
 }
@@ -580,15 +603,22 @@ func (s *server) syncOneLocked(ctx context.Context, hash, ep string) (J, error) 
 				phase := "pending"
 				if out["confirmationState"] == "finalized" {
 					phase = "finalized"
+				} else if out["confirmationState"] == "reorged" {
+					phase = "removed"
 				}
 				err := s.applySettlement(SettlementEvent{ChainID: s.c.Manifest["chainId"].(string), EntryPoint: ep, SponsorshipID: id, EventID: event.Hash + ":" + log.LogIndex, BlockHash: strings.ToLower(log.BlockHash), TransactionHash: strings.ToLower(log.TransactionHash), LogIndex: strconv.FormatUint(index, 10), Phase: phase, ActualCostNative: event.Cost.String()})
 				if err != nil {
 					return nil, err
 				}
-				fee := out["fee"].(map[string]any)
-				fee["budgetCostNative"] = event.Cost.String()
-				fee["costPolicyId"] = accounting["costPolicyId"]
-				historical["chainObservation"] = s.indexObservation(head)
+				if phase == "removed" {
+					historical["chainObservation"] = nil
+					historical["permitValidity"] = "unknown"
+				} else {
+					fee := out["fee"].(map[string]any)
+					fee["budgetCostNative"] = event.Cost.String()
+					fee["costPolicyId"] = accounting["costPolicyId"]
+					historical["chainObservation"] = s.indexObservation(head)
+				}
 				historical["evidence"] = out["evidence"]
 			}
 		}

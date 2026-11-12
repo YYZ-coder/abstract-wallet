@@ -75,8 +75,9 @@ test('keeps only the current query, prevents duplicate waiting requests, and all
   expect(screen.getByRole('region', { name: '只读查询结果' })).toHaveTextContent('0.009 ETH');
   expect(screen.queryByText('0.000783 ETH')).not.toBeInTheDocument();
   fireEvent.click(screen.getByRole('button', { name: '查询交易状态' }));
-  expect(await screen.findByRole('alert')).toHaveTextContent('RPC unavailable');
-  expect(screen.queryByRole('region', { name: '只读查询结果' })).not.toBeInTheDocument();
+  expect(await screen.findByRole('alert')).toHaveTextContent('RPC unavailable。保留上次已核实结果，系统将自动重试。');
+  expect(screen.getByRole('region', { name: '只读查询结果' })).toHaveTextContent('0.009 ETH');
+  expect(screen.getByRole('region', { name: '只读查询结果' })).toHaveTextContent(nextHash);
   fireEvent.click(screen.getByRole('button', { name: '查询交易状态' }));
   expect(await screen.findByRole('region', { name: '只读查询结果' })).toHaveTextContent('0.009 ETH');
   expect(references.map(value => value.hash)).toEqual([hash, nextHash, nextHash, nextHash]);

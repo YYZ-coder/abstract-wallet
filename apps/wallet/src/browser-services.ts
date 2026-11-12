@@ -1,3 +1,4 @@
+import { readConfirmation } from './confirmation-policy';
 import { decodeAbiParameters, decodeEventLog, encodeFunctionData, formatEther, keccak256, parseAbi, parseAbiParameters, toHex, type Address, type Hex, type LocalAccount } from 'viem';
 import { entryPoint09Abi } from 'viem/account-abstraction';
 import { parseSiweMessage } from 'viem/siwe';
@@ -14,6 +15,7 @@ export type RuntimeNetwork = {
   entryPointCodeHash: Hex | null; delegateCodeHash: Hex | null; paymasterCodeHash: Hex | null;
   sponsorSigner: Address | null; manifestVersion: string;
   confirmationsRequired?: number;
+  finalityPolicy?: 'arbitrum-sepolia-finalized-v1';
   authDomain?:string;authUri?:string;
 };
 type ActiveAccount = { address:Address; signTypedData:LocalAccount['signTypedData']; signMessage:LocalAccount['signMessage']; signTransaction?:LocalAccount['signTransaction']; signer:SignerAdapter };
@@ -75,14 +77,15 @@ export function createBrowserServices(network: RuntimeNetwork, options: { fetch?
     if(blocked)throw blocked;
     return result;
   }
-  async function rpc(method: string, params: unknown[] = []): Promise<any> {
+  async function rpc(method: string, params: unknown[] = [], fetcher:typeof fetch=fetchImpl): Promise<any> {
     const requestId = ++id;
-    const response = await fetchImpl(network.rpcUrl, { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify({ jsonrpc: '2.0', id: requestId, method, params }) });
+    const response = await fetcher(network.rpcUrl, { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify({ jsonrpc: '2.0', id: requestId, method, params }) });
     if (!response.ok) throw new Error('网络连接失败');
     const result = await response.json();
     if (result.jsonrpc !== '2.0' || result.id !== requestId || result.error || !Object.hasOwn(result, 'result')) throw new Error('链状态暂时不可用');
     return result.result;
   }
+  const readRpc=rpc;
   async function snapshot() {
     if (!account) throw new Error('请先创建测试钱包');
     const authority=account,connection=external;
@@ -96,7 +99,8 @@ export function createBrowserServices(network: RuntimeNetwork, options: { fetch?
     const delegation=(code === '0x' ? 'undelegated' : expected && code.toLowerCase() === expected ? 'enabled' : 'unknown') as 'undelegated'|'enabled'|'unknown';
     return { address: account.address, balance: formatEther(BigInt(balance)), delegation, ...(external?{connection:{walletId:external.walletId,walletName:external.walletName},availability:{canSubmit:delegation==='enabled',canRevoke:false,reason:delegation==='enabled'?'原地址已启用，可请求钱包签名；撤销请在原钱包中操作':delegation==='undelegated'?'当前钱包未提供本项目的7702授权接口，暂不能启用；原地址保持不变':'账户存在其他委托或代码状态未知，请先在原钱包中核实'}}:{}) };
   }
-  async function ready(requirePaymaster=false) {
+  async function ready(requirePaymaster=false,fetcher:typeof fetch=fetchImpl) {
+    const rpc=(method:string,params:unknown[]=[])=>readRpc(method,params,fetcher);
     if (!network.entryPoint || !network.delegate || !network.entryPointCodeHash || !network.delegateCodeHash) throw new Error('测试网部署尚未完成，请等待网络准备就绪');
     const [epCode, delegateCode] = await Promise.all([rpc('eth_getCode', [network.entryPoint, 'latest']), rpc('eth_getCode', [network.delegate, 'latest'])]);
     if (epCode === '0x' || delegateCode === '0x' || keccak256(epCode) !== network.entryPointCodeHash || keccak256(delegateCode) !== network.delegateCodeHash) throw new Error('DEPLOYMENT_MISMATCH：合约代码与网络清单不一致');
@@ -108,7 +112,7 @@ export function createBrowserServices(network: RuntimeNetwork, options: { fetch?
       if(signer.toLowerCase()!==network.sponsorSigner.toLowerCase())throw new Error('赞助签名人与链上部署不一致');
     }
     const config: ChainConfig = { chainId: network.chainId, rpcUrl: network.rpcUrl, bundlerUrls: [network.bundlerUrl], entryPoint: network.entryPoint, delegate: network.delegate, ...(network.paymaster ? { paymaster: network.paymaster } : {}) };
-    return { config, transport: createWalletClientTransport(config, fetchImpl) };
+    return { config, transport: createWalletClientTransport(config, fetcher) };
   }
   async function previewTransfer(draft: TransferDraft): Promise<Preview> {
     prepared=undefined;currentPreview=undefined;preparedQuoteExpiry=undefined;
@@ -225,11 +229,20 @@ export function createBrowserServices(network: RuntimeNetwork, options: { fetch?
     }
     return status;
   }
-  async function status(hash: string): Promise<OperationStatus> {
+  async function status(hash:string):Promise<OperationStatus>{
+    const controller=new AbortController();
+    let timeout:ReturnType<typeof setTimeout>;
+    const deadline=new Promise<never>((_,reject)=>{timeout=setTimeout(()=>{reject(new Error('查询链上状态超时，请重试'));controller.abort();},15000);});
+    const boundedFetch:typeof fetch=(url,init)=>fetchImpl(url,{...init,signal:controller.signal});
+    try{return await Promise.race([readStatus(hash,boundedFetch,controller.signal),deadline]);}
+    finally{clearTimeout(timeout!);controller.abort();}
+  }
+  async function readStatus(hash:string,fetcher:typeof fetch,signal:AbortSignal):Promise<OperationStatus>{
+    const rpc=(method:string,params:unknown[]=[])=>readRpc(method,params,fetcher);
     const record=operations.get(hash);
     if (!account || !record || record.signed.prepared.account.toLowerCase()!==account.address.toLowerCase()) throw new Error('找不到当前账户的操作记录');
-    const {transport}=await ready(); const hint=await transport.getReceipt(hash as Hex);
-    let next:OperationStatus={...record.status,execution:'unknown',confirmation:'pending'};
+    const {transport}=await ready(false,fetcher); const hint=await transport.getReceipt(hash as Hex);
+    let next:OperationStatus={...record.status,execution:'unknown',confirmation:'pending',finality:undefined};
     const txHash=hint?.receipt?.transactionHash ?? hint?.transactionHash;
     if(typeof txHash==='string' && /^0x[0-9a-fA-F]{64}$/.test(txHash)){
       // Bundler metadata is only a locator. Execution is proven independently at the chain RPC.
@@ -245,16 +258,11 @@ export function createBrowserServices(network: RuntimeNetwork, options: { fetch?
         }
       }
       if(event){
-        const [canonical,head]=await Promise.all([rpc('eth_getBlockByNumber',[receipt.blockNumber,false]),rpc('eth_getBlockByNumber',['latest',false])]);
-        if (!canonical || canonical.hash?.toLowerCase()!==receipt.blockHash.toLowerCase()) next={...next,confirmation:'reorged'};
-        else {
-        const depth=BigInt(head.number)-BigInt(receipt.blockNumber)+1n;
-        const required=network.confirmationsRequired ?? (network.mode==='local'?1:undefined);
-        const confirmed=required!==undefined && Number.isSafeInteger(required) && required>0 && depth>=BigInt(required);
-        next={...next,submission:'accepted',execution:event.success?'succeeded':'reverted',confirmation:confirmed?'confirmed':'pending'};
-        }
+        const observed=await readConfirmation(network,receipt,rpc);
+        next={...next,...observed,...(observed.confirmation==='reorged'?{}:{submission:'accepted',execution:event.success?'succeeded':'reverted'})};
       }
     }
+    signal.throwIfAborted();
     record.status=next; return next;
   }
   async function cancel(hash:string):Promise<OperationStatus>{
@@ -314,9 +322,8 @@ export function createBrowserServices(network: RuntimeNetwork, options: { fetch?
     for(let attempt=0;attempt<10;attempt++){
       const receipt=await rpc('eth_getTransactionReceipt',[pending.hash]);
       if(receipt?.blockHash && receipt?.blockNumber){
-        const [canonical,head,code,nonce]=await Promise.all([rpc('eth_getBlockByNumber',[receipt.blockNumber,false]),rpc('eth_getBlockByNumber',['latest',false]),rpc('eth_getCode',[authority.address,'latest']),rpc('eth_getTransactionCount',[authority.address,'latest'])]);
-        const required=network.confirmationsRequired ?? (network.mode==='local'?1:undefined);
-        const confirmed=receipt.transactionHash?.toLowerCase()===pending.hash.toLowerCase() && required!==undefined && required>0 && Number.isSafeInteger(required) && canonical?.hash?.toLowerCase()===receipt.blockHash.toLowerCase() && BigInt(head.number)-BigInt(receipt.blockNumber)+1n>=BigInt(required) && code==='0x' && BigInt(nonce)>=pending.minimumNonce;
+        const [observed,code,nonce]=await Promise.all([readConfirmation(network,receipt,rpc),rpc('eth_getCode',[authority.address,'latest']),rpc('eth_getTransactionCount',[authority.address,'latest'])]);
+        const confirmed=receipt.transactionHash?.toLowerCase()===pending.hash.toLowerCase() && observed.confirmation==='confirmed' && code==='0x' && BigInt(nonce)>=pending.minimumNonce;
         if(confirmed){pendingRevocation=undefined;prepared=undefined;currentPreview=undefined;return{transactionHash:pending.hash,confirmed:true};}
         return{transactionHash:pending.hash,confirmed:false};
       }

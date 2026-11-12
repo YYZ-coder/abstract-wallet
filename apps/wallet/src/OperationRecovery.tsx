@@ -1,5 +1,7 @@
 import { useEffect, useRef, useState } from 'react';
 import { isAddress } from 'viem';
+import { presentOperation } from './operation-presentation';
+import { useReadonlyPolling } from './use-readonly-polling';
 import type { ObservedOperation, OperationReference } from './services';
 
 export type OperationRecoveryProps = {
@@ -12,56 +14,63 @@ export function OperationRecovery({ inspectOperation, recentOperation }: Operati
   const [hash, setHash] = useState('');
   const [error, setError] = useState('');
   const [result, setResult] = useState<ObservedOperation>();
-  const [waiting, setWaiting] = useState(false);
-  const generation = useRef(0);
-  const active = useRef(false);
+  const [selected, setSelected] = useState<OperationReference>();
   const queryTimer = useRef<ReturnType<typeof setTimeout>>(undefined);
+  const tracking = useReadonlyPolling({
+    key: selected ? `${selected.chainId}:${selected.address.toLowerCase()}:${selected.hash}` : undefined,
+    terminal: result?.operation.confirmation === 'confirmed' || result?.operation.submission === 'rejected',
+    scope: inspectOperation,
+    read: async () => {
+      let timeout: ReturnType<typeof setTimeout>;
+      const deadline = new Promise<never>((_, reject) => {
+        queryTimer.current = timeout = setTimeout(() => reject(new Error('查询超时，请重试只读查询')), 15000);
+      });
+      try { return await Promise.race([inspectOperation(selected!), deadline]); }
+      finally { clearTimeout(timeout!); }
+    },
+    apply: setResult,
+  });
+  const waiting = tracking.busy;
 
   useEffect(() => {
-    setResult(undefined); setError(''); setWaiting(false);
+    setResult(undefined); setError(''); setSelected(undefined);
     const recent = recentOperation?.();
     if (recent) {
       setAddress(recent.address); setHash(recent.hash);
-      void query(recent);
+      if (validReference(recent)) setSelected({...recent});
+      else setError('请输入有效的查询地址和 32 字节 UserOperation 编号');
     }
-    return () => { generation.current++; active.current = false; clearTimeout(queryTimer.current); };
+    return () => { clearTimeout(queryTimer.current); };
   }, [inspectOperation, recentOperation]);
 
-  function invalidateQuery() {
-    generation.current++; active.current = false;
-    clearTimeout(queryTimer.current);
-    setResult(undefined); setError(''); setWaiting(false);
-  }
+  useEffect(() => {
+    if (selected) void tracking.refresh();
+    return () => { clearTimeout(queryTimer.current); };
+  }, [selected]);
 
-  async function query(next: OperationReference = { chainId: '421614', address: address.trim(), hash: hash.trim() }) {
-    if (active.current) return;
-    if (next.chainId !== '421614' || !isAddress(next.address) || !/^0x[0-9a-fA-F]{64}$/.test(next.hash)) {
-      setResult(undefined);
+  function validReference(next: OperationReference) {
+    return next.chainId === '421614' && isAddress(next.address) && /^0x[0-9a-fA-F]{64}$/.test(next.hash);
+  }
+  function invalidateQuery() {
+    setSelected(undefined); setResult(undefined); setError('');
+    clearTimeout(queryTimer.current);
+  }
+  function query(next: OperationReference = { chainId: '421614', address: address.trim(), hash: hash.trim() }) {
+    if (waiting) return;
+    if (!validReference(next)) {
+      setSelected(undefined); setResult(undefined);
       setError('请输入有效的查询地址和 32 字节 UserOperation 编号');
       return;
     }
-    const current = ++generation.current;
-    active.current = true; setWaiting(true); setError(''); setResult(undefined);
-    let timeout: ReturnType<typeof setTimeout>;
-    const deadline = new Promise<never>((_, reject) => {
-      queryTimer.current = timeout = setTimeout(() => reject(new Error('查询超时，请重试只读查询')), 15000);
-    });
-    try {
-      const observed = await Promise.race([inspectOperation(next), deadline]);
-      if (generation.current === current) setResult(observed);
-    } catch (failure) {
-      if (generation.current === current) setError(failure instanceof Error ? failure.message : '查询失败，请重试');
-    } finally {
-      clearTimeout(timeout!);
-      if (generation.current === current) { active.current = false; setWaiting(false); }
+    setError('');
+    if (selected?.address.toLowerCase() === next.address.toLowerCase() && selected.hash === next.hash) {
+      void tracking.refresh();
+    } else {
+      setResult(undefined); setSelected(next);
     }
   }
   const operation = result?.operation;
-  const status = operation?.confirmation === 'reorged' ? '链发生重组，待重新核实'
-    : operation?.execution === 'reverted' ? '执行失败'
-    : operation?.execution === 'succeeded' ? operation.confirmation === 'confirmed' ? '交易已确认' : '执行成功，等待确认'
-    : operation?.submission === 'rejected' ? '提交被拒绝'
-    : operation?.submission === 'unknown' ? '提交结果待核实' : '已受理，等待执行';
+  const status = operation && presentOperation(operation).title;
   const transactionHash = result?.transactionHash && /^0x[0-9a-fA-F]{64}$/.test(result.transactionHash) ? result.transactionHash : undefined;
   return <section className="operation-recovery" aria-label="查询已提交交易">
     <h2>查询已提交交易</h2>
@@ -73,13 +82,14 @@ export function OperationRecovery({ inspectOperation, recentOperation }: Operati
       <button type="submit" className="button-secondary" disabled={waiting} aria-busy={waiting}>{waiting ? '正在查询…' : '查询交易状态'}</button>
     </form>
     {waiting && <p role="status">正在查询链上状态，请稍候…</p>}
-    {error && <p role="alert">{error}</p>}
+    {(error||tracking.error) && <p role="alert">{error||tracking.error}{tracking.error&&result&&'。保留上次已核实结果，系统将自动重试。'}</p>}
     {result && <section className="recovery-result" aria-label="只读查询结果">
       <h3>只读查询结果</h3>
       <p className="address">{result.wallet.address}</p>
       <p>{result.wallet.balance} ETH</p>
       <p>{result.wallet.delegation === 'enabled' ? '原地址已启用智能账户' : result.wallet.delegation === 'undelegated' ? '原地址尚未启用智能账户' : '委托状态待核实'}</p>
-      <p className="recovery-status">{status}</p>
+      <p className="recovery-status" aria-live="polite">{status}</p>
+      {operation?.finality&&<p>{presentOperation(operation).message}</p>}
       <p className="field-hint">UserOperation 编号</p><p className="operation-hash">{result.reference.hash}</p>
       {transactionHash && <>
         <p className="field-hint">链上交易哈希</p><p className="operation-hash">{transactionHash}</p>
